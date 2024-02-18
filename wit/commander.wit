@@ -23,7 +23,8 @@ interface types {
 
     variant data-type {
         primitive(primitive),
-        table-type(list<column>)
+        table-type(list<column>),
+        type-variable,
     }
 
     record column {
@@ -46,15 +47,10 @@ interface types {
         table-value(list<list<primitive-value>>)
     }
 
-    record value-write {
-        index: u32,
-        value: value
-    }
-
     variant value-event {
-        set(value-write),
-        add(value-write),
-        clear(u32)
+        set(value),
+        add(value),
+        clear,
     }
 
     record schema {
@@ -83,5 +79,5 @@ world plugin {
 
     export get-schema: func() -> schema;
 
-    export run: func(inputs: list<value>, outputs: output-events-stream) -> result<string, string>;
+    export run: func(inputs: list<value>, outputs: list<output-events-stream>) -> result<string, string>;
 }

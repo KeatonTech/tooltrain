@@ -1,5 +1,5 @@
 use commander::base::types::{
-    Column, DataType, Primitive, PrimitiveValue, StreamSpec, ValueEvent, ValueWrite,
+    Column, DataType, Primitive, PrimitiveValue, StreamSpec, ValueEvent,
 };
 use wasi::filesystem::types::{Descriptor, DescriptorFlags, ErrorCode, OpenFlags, PathFlags};
 
@@ -47,7 +47,7 @@ impl Guest for ListProgram {
         }
     }
 
-    fn run(mut inputs: Vec<Value>, outputs: OutputEventsStream) -> Result<String, String> {
+    fn run(mut inputs: Vec<Value>, outputs: Vec<OutputEventsStream>) -> Result<String, String> {
         if let Some(Value::PrimitiveValue(PrimitiveValue::PathValue(path))) = inputs.pop() {
             let (base, base_path) = wasi::filesystem::preopens::get_directories().pop().unwrap();
             println!("Base Path: {}", base_path);
@@ -71,19 +71,16 @@ impl Guest for ListProgram {
                 )
                 .map_err(|code| format!("Error reading file: {:?}", file_entry.name))?;
 
-                outputs.send(&ValueEvent::Add(ValueWrite {
-                    index: 0,
-                    value: Value::TableValue(vec![vec![
-                        PrimitiveValue::StringValue(file_entry.name),
-                        PrimitiveValue::NumberValue(file_stat.size as f64),
-                        PrimitiveValue::TimestampValue(
-                            file_stat
-                                .data_access_timestamp
-                                .map(|t| t.seconds * 1000)
-                                .unwrap_or(0u64),
-                        ),
-                    ]]),
-                }));
+                outputs[0].send(&ValueEvent::Add(Value::TableValue(vec![vec![
+                    PrimitiveValue::StringValue(file_entry.name),
+                    PrimitiveValue::NumberValue(file_stat.size as f64),
+                    PrimitiveValue::TimestampValue(
+                        file_stat
+                            .data_access_timestamp
+                            .map(|t| t.seconds * 1000)
+                            .unwrap_or(0u64),
+                    ),
+                ]])));
             }
             Ok("Done".to_string())
         } else {

@@ -120,7 +120,7 @@ async fn main() -> Result<(), String> {
                 ]),
             )]
             .as_slice(),
-            Resource::new_own(1)
+            vec![Resource::new_own(1)].as_slice()
         )
         .await
         .unwrap()
