@@ -1,7 +1,9 @@
 use commander::base::types::{
-    Column, DataType, Primitive, PrimitiveValue, StreamSpec, ValueEvent,
+    Column, DataType, EnumVariant, Primitive, PrimitiveValue, StreamSpec, ValueEvent,
 };
-use wasi::filesystem::types::{Descriptor, DescriptorFlags, ErrorCode, OpenFlags, PathFlags};
+use wasi::filesystem::types::{
+    Descriptor, DescriptorFlags, DescriptorStat, DescriptorType, OpenFlags, PathFlags,
+};
 
 wit_bindgen::generate!({
     path: "../wit",
@@ -31,6 +33,28 @@ impl Guest for ListProgram {
                         name: "name".to_string(),
                         description: "The name of the file".to_string(),
                         data_type: Primitive::StringType,
+                    },
+                    Column {
+                        name: "type".to_string(),
+                        description: "The type of the filesystem entity".to_string(),
+                        data_type: Primitive::EnumType(vec![
+                            EnumVariant {
+                                name: "file".to_string(),
+                                description: "A regular file".to_string(),
+                            },
+                            EnumVariant {
+                                name: "directory".to_string(),
+                                description: "A directory".to_string(),
+                            },
+                            EnumVariant {
+                                name: "symlink".to_string(),
+                                description: "A symbolic link".to_string(),
+                            },
+                            EnumVariant {
+                                name: "other".to_string(),
+                                description: "Some other kind of entity not represented here".to_string(),
+                            },
+                        ]),
                     },
                     Column {
                         name: "size".to_string(),
@@ -69,11 +93,12 @@ impl Guest for ListProgram {
                     PathFlags::SYMLINK_FOLLOW,
                     &file_entry.name,
                 )
-                .map_err(|code| format!("Error reading file: {:?}", file_entry.name))?;
+                .map_err(|code| format!("Error reading {} (code: {code})", file_entry.name))?;
 
                 outputs[0].send(&ValueEvent::Add(Value::TableValue(vec![vec![
                     PrimitiveValue::StringValue(file_entry.name),
                     PrimitiveValue::NumberValue(file_stat.size as f64),
+                    PrimitiveValue::EnumValue(ListProgram::file_stat_to_type_enum(&file_stat)),
                     PrimitiveValue::TimestampValue(
                         file_stat
                             .data_access_timestamp
@@ -103,5 +128,14 @@ impl ListProgram {
         )
         .map_err(|code| format!("Could not open directory {} (code {code})", path[0]))?;
         ListProgram::navigate_to_dir(next_dir, &path[1..])
+    }
+
+    fn file_stat_to_type_enum(stat: &DescriptorStat) -> u16 {
+        match stat.type_ {
+            DescriptorType::RegularFile => 0,
+            DescriptorType::Directory => 1,
+            DescriptorType::SymbolicLink => 2,
+            _ => 3,
+        }
     }
 }

@@ -98,7 +98,7 @@ async fn main() -> Result<(), String> {
 
     println!("Instantiating module");
     let mut store = Store::new(&engine, WasmStorage::new());
-    let (plugin, instance) = Plugin::instantiate_async(&mut store, &ls_component, &linker)
+    let (plugin, _) = Plugin::instantiate_async(&mut store, &ls_component, &linker)
         .await
         .unwrap();
 
@@ -120,9 +120,12 @@ async fn main() -> Result<(), String> {
                 ]),
             )]
             .as_slice(),
-            vec![Resource::new_own(1)].as_slice()
+            vec![Resource::new_own(1)].as_slice(),
         )
         .await
         .unwrap()
-        .map(|success| ());
+        .map(|success| {
+            println!("Final output: {}", success);
+            ()
+        });
 }
