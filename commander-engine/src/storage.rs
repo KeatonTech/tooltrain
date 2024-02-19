@@ -10,6 +10,7 @@ use async_trait::async_trait;
 use cap_std::fs::Dir;
 use parking_lot::RwLock;
 use std::sync::Arc;
+use wasmtime_wasi_http::{WasiHttpCtx, WasiHttpView};
 
 use wasmtime::{component::*, Error};
 use wasmtime_wasi::preview2::{DirPerms, FilePerms, WasiCtx, WasiCtxBuilder, WasiView};
@@ -17,6 +18,7 @@ use wasmtime_wasi::preview2::{DirPerms, FilePerms, WasiCtx, WasiCtxBuilder, Wasi
 pub(crate) struct WasmStorage {
     table: ResourceTable,
     ctx: WasiCtx,
+    http_ctx: WasiHttpCtx,
     outputs: Arc<RwLock<Outputs>>,
 }
 
@@ -38,6 +40,16 @@ impl WasiView for WasmStorage {
     }
 }
 
+impl WasiHttpView for WasmStorage {
+    fn ctx(&mut self) -> &mut WasiHttpCtx {
+        &mut self.http_ctx
+    }
+
+    fn table(&mut self) -> &mut ResourceTable {
+        &mut self.table
+    }
+}
+
 impl WasmStorage {
     pub(crate) fn new() -> Self {
         Self {
@@ -52,6 +64,7 @@ impl WasmStorage {
                 .inherit_stdio()
                 .inherit_stderr()
                 .build(),
+            http_ctx: WasiHttpCtx,
             outputs: Arc::new(RwLock::new(Outputs::default())),
         }
     }

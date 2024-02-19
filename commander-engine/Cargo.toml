@@ -14,3 +14,4 @@ parking_lot = "0.12.1"
 tokio = { version = "1.36.0", features = ["macros"] }
 wasmtime = { version = "17.0.1", features = ["component-model", "async"] }
 wasmtime-wasi = { version = "17.0.1", features = ["tokio"] }
+wasmtime-wasi-http = "17.0.1"
