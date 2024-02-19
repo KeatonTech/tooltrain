@@ -30,6 +30,7 @@ impl Default for CommanderEngineInternal {
 
         let mut linker: Linker<WasmStorage> = Linker::new(&engine);
         wasmtime_wasi::preview2::command::add_to_linker(&mut linker).unwrap();
+        wasmtime_wasi_http::bindings::http::types::add_to_linker(&mut linker, |c| c).unwrap();
         wasmtime_wasi_http::bindings::http::outgoing_handler::add_to_linker(&mut linker, |c| c).unwrap();
         Plugin::add_to_linker(&mut linker, |w| w).unwrap();
 

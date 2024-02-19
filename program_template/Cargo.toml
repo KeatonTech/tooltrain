@@ -1,0 +1,13 @@
+[package]
+name = "program-name"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen = "0.18.0"
+
+[package.metadata.component]
+package = "commander:base"
