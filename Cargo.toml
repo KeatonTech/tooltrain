@@ -1,6 +1,3 @@
 [workspace]
 
-members = [
-    "host",
-    "ls"
-]
+members = ["commander-engine", "host", "ls"]
