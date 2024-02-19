@@ -138,7 +138,6 @@ impl HostOutputHandle for WasmStorage {
 impl PluginImports for WasmStorage {
     async fn add_output(
         &mut self,
-        run_handle: Resource<RunHandle>,
         name: String,
         description: String,
         data_type: DataType,
@@ -207,8 +206,7 @@ async fn main() -> Result<(), String> {
                     "Documents".to_string(),
                 ]),
             )]
-            .as_slice(),
-            Resource::new_own(0),
+            .as_slice()
         )
         .await
         .unwrap()

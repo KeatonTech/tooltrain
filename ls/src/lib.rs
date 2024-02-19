@@ -93,17 +93,16 @@ impl Guest for ListProgram {
         }
     }
 
-    fn run(mut inputs: Vec<Value>, run_handle: RunHandle) -> Result<String, String> {
+    fn run(mut inputs: Vec<Value>) -> Result<String, String> {
         if let Some(Value::PrimitiveValue(PrimitiveValue::PathValue(path))) = inputs.pop() {
             let (base, _) = wasi::filesystem::preopens::get_directories().pop().unwrap();
             let descriptor = ListProgram::navigate_to_dir(base, &path)?;
 
             let list_output_handle = add_output(
-                run_handle,
                 "Files",
                 "The list of files",
                 &OUTPUT_TABLE_TYPE,
-                None,
+                None
             );
             ListProgram::list_files_in_dir(descriptor, list_output_handle)
         } else {

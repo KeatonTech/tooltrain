@@ -80,7 +80,6 @@ world plugin {
     use wasi:filesystem/types@0.2.0.{descriptor};
 
     import add-output: func(
-        run-handle: run-handle,
         name: string,
         description: string,
         data-type: data-type,
@@ -89,5 +88,5 @@ world plugin {
 
     export get-schema: func() -> schema;
 
-    export run: func(inputs: list<value>, run-handle: run-handle) -> result<string, string>;
+    export run: func(inputs: list<value>) -> result<string, string>;
 }
