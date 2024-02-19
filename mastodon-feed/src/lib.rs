@@ -1,7 +1,11 @@
+use lazy_static::lazy_static;
 use commander::base::types::{Primitive, PrimitiveValue, StreamSpec};
-use wasi::http::{
-    self,
-    types::{Fields, OutgoingRequest, Scheme},
+use wasi::{
+    http::{
+        self,
+        types::{Fields, IncomingBody, OutgoingRequest, Scheme},
+    },
+    io::streams::StreamError,
 };
 
 wit_bindgen::generate!({
@@ -11,6 +15,8 @@ wit_bindgen::generate!({
         world: MastodonFeedProgram,
     },
 });
+
+mod parse;
 
 struct MastodonFeedProgram;
 
@@ -59,13 +65,38 @@ impl Guest for MastodonFeedProgram {
             .unwrap()
             .unwrap()
             .map_err(|e| format!("Error fetching public feed: {:?}", e))?;
-        let body = response.consume().map_err(|_| "Empty body")?;
+        let incoming_body = response.consume().map_err(|_| "Empty body")?;
+        let body = MastodonFeedProgram::read_incoming_body(incoming_body)?;
+        let data: Vec<parse::Status> =
+            serde_json::from_str(&body).map_err(|p| format!("Error parsing JSON: {:?}", p))?;
+
+        add_output(
+            "Feed",
+            "The public feed from the Mastodon instance",
+            &parse::OUTPUT_TABLE_TYPE,
+            Some(&Value::TableValue(data.iter().map(parse::Status::as_output_value).collect())),
+        );
+
+        Ok("Done".to_string())
+    }
+}
+
+impl MastodonFeedProgram {
+    fn read_incoming_body(body: IncomingBody) -> Result<String, String> {
         let body_stream = body.stream().map_err(|_| "Error reading body")?;
-        body_stream.subscribe().block();
-        let body_data = body_stream
-            .blocking_read(99999u64)
-            .map_err(|e| format!("Error reading body: {:?}", e))?;
-        let body_text = String::from_utf8_lossy(&body_data).to_string();
-        Ok(body_text)
+        let mut body_bytes: Vec<u8> = vec![];
+        loop {
+            body_stream.subscribe().block();
+            match body_stream.read(10240) {
+                Ok(chunk) => {
+                    body_bytes.extend_from_slice(&chunk);
+                }
+                Err(StreamError::Closed) => break,
+                Err(e) => {
+                    return Err(format!("Stream error while reading body: {:?}", e));
+                }
+            }
+        }
+        Ok(String::from_utf8_lossy(&body_bytes).to_string())
     }
 }
