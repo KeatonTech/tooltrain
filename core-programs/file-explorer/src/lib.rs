@@ -1,8 +1,7 @@
 use std::{
     ffi::OsStr,
-    fs::{self, FileType},
-    os,
-    path::{Component, Path, PathBuf},
+    fs::{self},
+    path::{Component, PathBuf},
 };
 
 use commander::base::{
