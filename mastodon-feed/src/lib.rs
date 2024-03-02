@@ -94,7 +94,7 @@ impl MastodonFeedProgram {
         } else {
             "".to_string()
         };
-        let path = format!("api/v1/timelines/public{}", query_string);
+        let path = format!("/api/v1/timelines/public{}", query_string);
         request.set_path_with_query(Some(&path)).unwrap();
         let response_feed = http::outgoing_handler::handle(request, None)
             .map_err(|code| format!("Error constructing request: {:?}", code))?;
