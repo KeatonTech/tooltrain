@@ -19,14 +19,8 @@ fn main() {
 
 #[derive(Serialize)]
 enum FileEntry {
-    File {
-      name: String,
-      path: String,
-    },
-    Directory{
-      name: String,
-      path: String,
-    },
+    File { name: String, path: String },
+    Directory { name: String, path: String },
 }
 
 #[tauri::command]

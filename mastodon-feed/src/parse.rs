@@ -1,6 +1,9 @@
-use serde::Deserialize;
+use crate::{
+    commander::base::types::{Column, PrimitiveValue},
+    Primitive,
+};
 use lazy_static::lazy_static;
-use crate::{commander::base::types::{Column, PrimitiveValue}, Primitive};
+use serde::Deserialize;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Account {
@@ -8,8 +11,10 @@ pub struct Account {
     username: String,
     acct: String,
     display_name: String,
-    #[serde(default)] locked: bool,
-    #[serde(default)] bot: bool,
+    #[serde(default)]
+    locked: bool,
+    #[serde(default)]
+    bot: bool,
     discoverable: bool,
     created_at: String,
     note: String,
@@ -18,9 +23,12 @@ pub struct Account {
     avatar_static: String,
     header: String,
     header_static: String,
-    #[serde(default)] followers_count: u32,
-    #[serde(default)] following_count: u32,
-    #[serde(default)] statuses_count: u32,
+    #[serde(default)]
+    followers_count: u32,
+    #[serde(default)]
+    following_count: u32,
+    #[serde(default)]
+    statuses_count: u32,
     last_status_at: String,
 }
 
@@ -36,7 +44,6 @@ pub struct Status {
     account: Account,
     text: Option<String>,
 }
-
 
 lazy_static! {
     pub static ref OUTPUT_TABLE_COLUMNS: Vec<Column> = vec![

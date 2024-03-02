@@ -4,18 +4,17 @@ use std::{
     sync::Arc,
 };
 
+use super::structure::OutputChangeInternal;
 use crate::{
     bindings::Value,
     datastream::{
-        DataStreamSnapshot, ListChange, ListStream, TreeChange, TreeStream,
-        TreeStreamNode, ValueChange, ValueStream,
-    }, OutputDataType, OutputId, OutputMetadata, Outputs,
+        DataStreamSnapshot, ListChange, ListStream, TreeChange, TreeStream, TreeStreamNode,
+        ValueChange, ValueStream,
+    },
+    OutputDataType, OutputId, OutputMetadata, Outputs,
 };
-use super::structure::OutputChangeInternal;
 use anyhow::{anyhow, Error};
-use parking_lot::{
-    MappedRwLockReadGuard, MappedRwLockWriteGuard,
-};
+use parking_lot::{MappedRwLockReadGuard, MappedRwLockWriteGuard};
 use tokio::sync::broadcast::Receiver;
 use tokio_stream::{once, wrappers::BroadcastStream, Stream, StreamExt};
 
@@ -47,7 +46,7 @@ impl OutputMetadata {
 #[derive(Clone, Debug)]
 pub enum OutputChange {
     Added(OutputHandle),
-    Removed(OutputId)
+    Removed(OutputId),
 }
 
 #[derive(Clone, Debug)]
@@ -184,12 +183,14 @@ impl OutputHandle {
 
 impl Outputs {
     pub fn updates(&self) -> impl Stream<Item = OutputChange> + '_ {
-        BroadcastStream::from(self.0.read().updates.subscribe()).map_while(|result| result.ok()).map(|internal_change| {
-            match internal_change {
-                OutputChangeInternal::Added(metadata) => OutputChange::Added(metadata.to_handle(self.clone())),
-                OutputChangeInternal::Removed(id) => OutputChange::Removed(id)
-            }
-        })
+        BroadcastStream::from(self.0.read().updates.subscribe())
+            .map_while(|result| result.ok())
+            .map(|internal_change| match internal_change {
+                OutputChangeInternal::Added(metadata) => {
+                    OutputChange::Added(metadata.to_handle(self.clone()))
+                }
+                OutputChangeInternal::Removed(id) => OutputChange::Removed(id),
+            })
     }
 
     pub fn values(&self) -> impl Stream<Item = Vec<OutputHandle>> + '_ {

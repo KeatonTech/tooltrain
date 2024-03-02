@@ -1,6 +1,4 @@
-use commander::base::types::{
-    EnumVariant, Primitive, PrimitiveValue, InputSpec
-};
+use commander::base::types::{EnumVariant, InputSpec, Primitive, PrimitiveValue};
 use lazy_static::lazy_static;
 use wasi::filesystem::types::{
     Descriptor, DescriptorFlags, DescriptorStat, DescriptorType, OpenFlags, PathFlags,
@@ -98,11 +96,8 @@ impl Guest for ListProgram {
         let (base, _) = wasi::filesystem::preopens::get_directories().pop().unwrap();
         let descriptor = ListProgram::navigate_to_dir(base, &path)?;
 
-        let list_output_handle = add_list_output(
-            "Files",
-            "The list of files",
-            &OUTPUT_TABLE_COLUMNS,
-        );
+        let list_output_handle =
+            add_list_output("Files", "The list of files", &OUTPUT_TABLE_COLUMNS);
         ListProgram::list_files_in_dir(descriptor, list_output_handle)
     }
 }

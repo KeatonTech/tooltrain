@@ -4,13 +4,13 @@ use crate::Value;
 use anyhow::{anyhow, Error};
 use tokio::sync::broadcast;
 
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 pub enum ListChange {
     Add(Arc<Value>),
     Pop(Arc<Value>),
     HasMorePages(bool),
     Clear,
-    Destroy
+    Destroy,
 }
 
 #[derive(Debug)]
@@ -25,7 +25,12 @@ impl ListStream {
     pub(crate) fn new() -> Self {
         let (updates, _) = broadcast::channel::<ListChange>(128);
         let (page_load_sender, _) = broadcast::channel::<u32>(32);
-        ListStream { value: vec![], updates, has_more_rows: false, page_load_sender }
+        ListStream {
+            value: vec![],
+            updates,
+            has_more_rows: false,
+            page_load_sender,
+        }
     }
 
     pub fn snapshot(&self) -> Vec<Arc<Value>> {

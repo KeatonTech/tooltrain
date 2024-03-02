@@ -1,8 +1,4 @@
-use std::{
-    future::Future,
-    path::PathBuf,
-    sync::Arc,
-};
+use std::{future::Future, path::PathBuf, sync::Arc};
 
 use anyhow::{anyhow, Error};
 

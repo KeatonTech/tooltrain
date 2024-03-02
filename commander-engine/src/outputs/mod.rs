@@ -1,6 +1,6 @@
 mod api;
-mod structure;
 mod bindings;
+mod structure;
 
-pub use structure::{Outputs, OutputId, OutputMetadata, OutputDataType};
 pub use api::*;
+pub use structure::{OutputDataType, OutputId, OutputMetadata, Outputs};

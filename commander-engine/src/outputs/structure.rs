@@ -1,13 +1,8 @@
-use std::{
-    collections::BTreeMap,
-    sync::Arc,
-};
+use std::{collections::BTreeMap, sync::Arc};
 
 use crate::{
     bindings::{DataType, Value},
-    datastream::{
-        DataStream, ListStream, TreeStream, ValueStream,
-    },
+    datastream::{DataStream, ListStream, TreeStream, ValueStream},
     Column,
 };
 use anyhow::{anyhow, Error};

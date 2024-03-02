@@ -1,11 +1,6 @@
-use crate::{
-    Outputs,
-};
-
-
+use crate::Outputs;
 
 use cap_std::fs::Dir;
-
 
 use wasmtime_wasi_http::{WasiHttpCtx, WasiHttpView};
 

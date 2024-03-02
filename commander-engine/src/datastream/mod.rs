@@ -7,65 +7,64 @@ mod tree;
 mod value;
 
 use anyhow::{anyhow, Error};
-pub use list::{ListStream, ListChange};
-pub use tree::{TreeStream, TreeChange, TreeStreamNode};
-pub use value::{ValueStream, ValueChange};
-
+pub use list::{ListChange, ListStream};
+pub use tree::{TreeChange, TreeStream, TreeStreamNode};
+pub use value::{ValueChange, ValueStream};
 
 #[derive(Debug)]
 pub enum DataStream {
     List(ListStream),
     Tree(TreeStream),
-    Value(ValueStream)
+    Value(ValueStream),
 }
 
 #[derive(Clone, Debug)]
 pub enum DataStreamSnapshot {
     List(Vec<Arc<Value>>),
     Tree(Vec<TreeStreamNode>),
-    Value(Option<Arc<Value>>)
+    Value(Option<Arc<Value>>),
 }
 
 impl DataStream {
     pub fn try_get_list(&self) -> Result<&ListStream, Error> {
         match self {
             DataStream::List(l) => Ok(l),
-            _ => Err(anyhow!("DataStream is not a List"))
+            _ => Err(anyhow!("DataStream is not a List")),
         }
     }
 
     pub fn try_get_list_mut(&mut self) -> Result<&mut ListStream, Error> {
         match self {
             DataStream::List(l) => Ok(l),
-            _ => Err(anyhow!("DataStream is not a List"))
+            _ => Err(anyhow!("DataStream is not a List")),
         }
     }
 
     pub fn try_get_tree(&self) -> Result<&TreeStream, Error> {
         match self {
             DataStream::Tree(t) => Ok(t),
-            _ => Err(anyhow!("DataStream is not a Tree"))
+            _ => Err(anyhow!("DataStream is not a Tree")),
         }
     }
 
     pub fn try_get_tree_mut(&mut self) -> Result<&mut TreeStream, Error> {
         match self {
             DataStream::Tree(t) => Ok(t),
-            _ => Err(anyhow!("DataStream is not a Tree"))
+            _ => Err(anyhow!("DataStream is not a Tree")),
         }
     }
 
     pub fn try_get_value(&self) -> Result<&ValueStream, Error> {
         match self {
             DataStream::Value(v) => Ok(v),
-            _ => Err(anyhow!("DataStream is not a Value"))
+            _ => Err(anyhow!("DataStream is not a Value")),
         }
     }
 
     pub fn try_get_value_mut(&mut self) -> Result<&mut ValueStream, Error> {
         match self {
             DataStream::Value(v) => Ok(v),
-            _ => Err(anyhow!("DataStream is not a Value"))
+            _ => Err(anyhow!("DataStream is not a Value")),
         }
     }
 
@@ -73,7 +72,7 @@ impl DataStream {
         match self {
             DataStream::List(l) => DataStreamSnapshot::List(l.snapshot()),
             DataStream::Tree(t) => DataStreamSnapshot::Tree(t.snapshot()),
-            DataStream::Value(v) => DataStreamSnapshot::Value(v.snapshot())
+            DataStream::Value(v) => DataStreamSnapshot::Value(v.snapshot()),
         }
     }
 
@@ -81,7 +80,7 @@ impl DataStream {
         match self {
             DataStream::List(mut l) => l.destroy(),
             DataStream::Tree(mut t) => t.destroy(),
-            DataStream::Value(mut v) => v.destroy()
+            DataStream::Value(mut v) => v.destroy(),
         }
     }
 }
