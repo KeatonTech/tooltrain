@@ -1,14 +1,12 @@
 use std::{
     collections::BTreeMap,
-    ops::{Deref, DerefMut},
     sync::Arc,
 };
 
 use crate::{
     bindings::{DataType, Value},
     datastream::{
-        DataStream, DataStreamSnapshot, ListChange, ListStream, TreeChange, TreeStream,
-        TreeStreamNode, ValueChange, ValueStream,
+        DataStream, ListStream, TreeStream, ValueStream,
     },
     Column,
 };
@@ -16,8 +14,8 @@ use anyhow::{anyhow, Error};
 use parking_lot::{
     MappedRwLockReadGuard, MappedRwLockWriteGuard, RwLock, RwLockReadGuard, RwLockWriteGuard,
 };
-use tokio::sync::broadcast::{channel, Receiver, Sender};
-use tokio_stream::{once, wrappers::BroadcastStream, Stream, StreamExt};
+use tokio::sync::broadcast::{channel, Sender};
+use tokio_stream::{StreamExt};
 
 pub type OutputId = u32;
 

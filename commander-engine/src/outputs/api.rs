@@ -5,19 +5,18 @@ use std::{
 };
 
 use crate::{
-    bindings::{DataType, Value},
+    bindings::{Value},
     datastream::{
-        DataStream, DataStreamSnapshot, ListChange, ListStream, TreeChange, TreeStream,
+        DataStreamSnapshot, ListChange, ListStream, TreeChange, TreeStream,
         TreeStreamNode, ValueChange, ValueStream,
-    },
-    Column, OutputDataType, OutputId, OutputMetadata, Outputs,
+    }, OutputDataType, OutputId, OutputMetadata, Outputs,
 };
 use super::structure::OutputChangeInternal;
 use anyhow::{anyhow, Error};
 use parking_lot::{
-    MappedRwLockReadGuard, MappedRwLockWriteGuard, RwLock, RwLockReadGuard, RwLockWriteGuard,
+    MappedRwLockReadGuard, MappedRwLockWriteGuard,
 };
-use tokio::sync::broadcast::{channel, Receiver, Sender};
+use tokio::sync::broadcast::{Receiver};
 use tokio_stream::{once, wrappers::BroadcastStream, Stream, StreamExt};
 
 fn make_broadcast_stream<T: Clone + Send + 'static>(
