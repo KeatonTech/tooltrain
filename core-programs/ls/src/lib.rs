@@ -7,7 +7,7 @@ use wasi::filesystem::types::{
 };
 
 wit_bindgen::generate!({
-    path: "../wit",
+    path: "../../wit",
     world: "plugin",
 });
 
