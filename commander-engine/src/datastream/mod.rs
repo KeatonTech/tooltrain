@@ -77,14 +77,6 @@ impl DataStream {
         }
     }
 
-    pub fn subscribe(&self) -> DataStreamUpdates {
-        match self {
-            DataStream::List(l) => DataStreamUpdates::List(l.subscribe()),
-            DataStream::Tree(t) => DataStreamUpdates::Tree(t.subscribe()),
-            DataStream::Value(v) => DataStreamUpdates::Value(v.subscribe())
-        }
-    }
-
     pub fn snapshot(&self) -> DataStreamSnapshot {
         match self {
             DataStream::List(l) => DataStreamSnapshot::List(l.snapshot()),
