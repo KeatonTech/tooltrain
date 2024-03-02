@@ -47,7 +47,10 @@ impl Guest for MastodonFeedProgram {
         let first_page = MastodonFeedProgram::request_page(&instance, None)?;
         let first_page_values: Vec<Vec<PrimitiveValue>> =
             first_page.iter().map(|v| v.as_output_value()).collect();
-        list_output.add(&Value::TableValue(first_page_values));
+        for value in first_page_values {
+            list_output.add(&Value::CompoundValue(value));
+        }
+        list_output.set_has_more_rows(true);
 
         let mut prev_page = first_page;
         loop {
@@ -58,7 +61,9 @@ impl Guest for MastodonFeedProgram {
                     let next_page = MastodonFeedProgram::request_page(&instance, max_id)?;
                     let next_page_values: Vec<Vec<PrimitiveValue>> =
                         next_page.iter().map(|v| v.as_output_value()).collect();
-                    list_output.add(&Value::TableValue(next_page_values));
+                    for value in next_page_values {
+                        list_output.add(&Value::CompoundValue(value));
+                    }
                     prev_page = next_page;
                 }
             }

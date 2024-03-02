@@ -44,7 +44,7 @@ interface types {
 
     variant value {
         primitive-value(primitive-value),
-        table-value(list<list<primitive-value>>)
+        compound-value(list<primitive-value>)
     }
 
     variant value-event {

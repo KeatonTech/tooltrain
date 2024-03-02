@@ -17,7 +17,7 @@ pub enum ListChange {
 pub struct ListStream {
     value: Vec<Arc<Value>>,
     updates: broadcast::Sender<ListChange>,
-    has_more_pages: bool,
+    has_more_rows: bool,
     page_load_sender: broadcast::Sender<u32>,
 }
 
@@ -25,7 +25,7 @@ impl ListStream {
     pub(crate) fn new() -> Self {
         let (updates, _) = broadcast::channel::<ListChange>(128);
         let (page_load_sender, _) = broadcast::channel::<u32>(32);
-        ListStream { value: vec![], updates, has_more_pages: true, page_load_sender }
+        ListStream { value: vec![], updates, has_more_rows: false, page_load_sender }
     }
 
     pub fn snapshot(&self) -> Vec<Arc<Value>> {
@@ -61,13 +61,13 @@ impl ListStream {
     }
 
     pub(crate) fn set_has_more_rows(&mut self, has_more_pages: bool) -> Result<(), Error> {
-        self.has_more_pages = has_more_pages;
+        self.has_more_rows = has_more_pages;
         let _ = self.updates.send(ListChange::HasMorePages(has_more_pages));
         Ok(())
     }
 
     pub fn request_page(&mut self, limit: u32) -> Result<bool, Error> {
-        if !self.has_more_pages {
+        if !self.has_more_rows {
             return Ok(false);
         }
 

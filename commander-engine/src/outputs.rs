@@ -16,12 +16,11 @@ use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use tokio::sync::broadcast::{channel, Sender};
 use tokio_stream::{once, wrappers::BroadcastStream, Stream, StreamExt};
 
-pub(crate) type OutputId = u32;
+pub type OutputId = u32;
 
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Ord, Eq)]
+#[derive(Clone, Debug)]
 pub enum OutputChange {
-    Added(OutputId),
-    Updated(OutputId),
+    Added(OutputMetadata),
     Removed(OutputId),
 }
 
@@ -46,13 +45,8 @@ pub(crate) struct OutputState {
     pub stream: DataStream,
 }
 
-pub struct OutputRef {
-    outputs: Outputs,
-    id: OutputId,
-}
-
 #[derive(Clone, Debug)]
-pub(crate) struct Outputs(Arc<RwLock<OutputsInternal>>);
+pub struct Outputs(Arc<RwLock<OutputsInternal>>);
 
 #[derive(Debug)]
 struct OutputsInternal {
@@ -84,19 +78,20 @@ impl Outputs {
             .last_key_value()
             .map(|(k, _)| k + 1)
             .unwrap_or(0);
+        let metadata = OutputMetadata {
+            id: next_index,
+            name,
+            description,
+            data_type,
+        };
         writer.state.insert(
             next_index,
             OutputState {
-                metadata: OutputMetadata {
-                    id: next_index,
-                    name,
-                    description,
-                    data_type,
-                },
+                metadata: metadata.clone(),
                 stream,
             },
         );
-        let _ = writer.updates.send(OutputChange::Added(next_index));
+        let _ = writer.updates.send(OutputChange::Added(metadata));
         Ok(next_index)
     }
 

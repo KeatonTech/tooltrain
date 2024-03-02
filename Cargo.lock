@@ -2032,6 +2032,7 @@ dependencies = [
  "anyhow",
  "commander-engine",
  "tokio",
+ "tokio-stream",
 ]
 
 [[package]]
