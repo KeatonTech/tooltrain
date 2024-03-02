@@ -1,10 +1,10 @@
 use serde::Deserialize;
 use lazy_static::lazy_static;
-use crate::{commander::base::types::{Column, PrimitiveValue, Value}, DataType, Primitive};
+use crate::{commander::base::types::{Column, PrimitiveValue}, Primitive};
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Account {
-    id: String,
+    pub id: String,
     username: String,
     acct: String,
     display_name: String,
@@ -26,7 +26,7 @@ pub struct Account {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Status {
-    id: String,
+    pub id: String,
     created_at: String,
     url: String,
     replies_count: u32,
@@ -39,7 +39,7 @@ pub struct Status {
 
 
 lazy_static! {
-    pub static ref OUTPUT_TABLE_TYPE: DataType = DataType::TableType(vec![
+    pub static ref OUTPUT_TABLE_COLUMNS: Vec<Column> = vec![
         Column {
             name: "id".to_string(),
             description: "The ID of the status".to_string(),
@@ -70,7 +70,7 @@ lazy_static! {
             description: "The number of replies to the status".to_string(),
             data_type: Primitive::NumberType,
         },
-    ]);
+    ];
 }
 
 impl Status {

@@ -1,5 +1,5 @@
 use commander::base::types::{
-    Column, EnumVariant, Primitive, PrimitiveValue, StreamSpec, ValueEvent,
+    EnumVariant, Primitive, PrimitiveValue, InputSpec
 };
 use lazy_static::lazy_static;
 use wasi::filesystem::types::{
@@ -54,7 +54,7 @@ impl FileEntityType {
 }
 
 lazy_static! {
-    static ref OUTPUT_TABLE_TYPE: DataType = DataType::TableType(vec![
+    static ref OUTPUT_TABLE_COLUMNS: Vec<Column> = vec![
         Column {
             name: "name".to_string(),
             description: "The name of the file".to_string(),
@@ -75,7 +75,7 @@ lazy_static! {
             description: "The time when the file was last accessed".to_string(),
             data_type: Primitive::TimestampType,
         },
-    ]);
+    ];
 }
 
 struct ListProgram;
@@ -85,34 +85,33 @@ impl Guest for ListProgram {
         Schema {
             name: "List Files".to_string(),
             description: "List files in a directory".to_string(),
-            arguments: vec![StreamSpec {
+            arguments: vec![InputSpec {
                 name: "directory".to_string(),
-                description: "The directory to list files in".to_string(),
+                description: "The top-level directory to list files in".to_string(),
                 data_type: DataType::Primitive(Primitive::PathType),
             }],
         }
     }
 
     fn run(mut inputs: Vec<Value>) -> Result<String, String> {
-        if let Some(Value::PrimitiveValue(PrimitiveValue::PathValue(path))) = inputs.pop() {
-            let (base, _) = wasi::filesystem::preopens::get_directories().pop().unwrap();
-            let descriptor = ListProgram::navigate_to_dir(base, &path)?;
+        let Some(Value::PrimitiveValue(PrimitiveValue::PathValue(path))) = inputs.pop() else {
+            Err("Invalid input".to_string())?
+        };
 
-            let list_output_handle = add_output(
-                "Files",
-                "The list of files",
-                &OUTPUT_TABLE_TYPE,
-                None
-            );
-            ListProgram::list_files_in_dir(descriptor, list_output_handle)
-        } else {
-            Err("Invalid input".to_string())
-        }
+        let (base, _) = wasi::filesystem::preopens::get_directories().pop().unwrap();
+        let descriptor = ListProgram::navigate_to_dir(base, &path)?;
+
+        let list_output_handle = add_list_output(
+            "Files",
+            "The list of files",
+            &OUTPUT_TABLE_COLUMNS,
+        );
+        ListProgram::list_files_in_dir(descriptor, list_output_handle)
     }
 }
 
 impl ListProgram {
-    fn list_files_in_dir(descriptor: Descriptor, output: OutputHandle) -> Result<String, String> {
+    fn list_files_in_dir(descriptor: Descriptor, output: ListOutput) -> Result<String, String> {
         let entry_stream = wasi::filesystem::types::Descriptor::read_directory(&descriptor)
             .map_err(|code| format!("Error opening directory: {:?}", code))?;
         loop {
@@ -130,7 +129,7 @@ impl ListProgram {
             )
             .map_err(|code| format!("Error reading {} (code: {code})", file_entry.name))?;
 
-            output.send(&ValueEvent::Add(Value::TableValue(vec![vec![
+            output.add(&Value::TableValue(vec![vec![
                 PrimitiveValue::StringValue(file_entry.name),
                 PrimitiveValue::NumberValue(file_stat.size as f64),
                 ListProgram::file_stat_to_type_enum(&file_stat),
@@ -140,7 +139,7 @@ impl ListProgram {
                         .map(|t| t.seconds * 1000)
                         .unwrap_or(0u64),
                 ),
-            ]])));
+            ]]));
         }
         Ok("Done".to_string())
     }

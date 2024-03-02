@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, future::Future, ops::Deref, path::{Path, PathBuf}, sync::Arc};
+use std::{collections::BTreeMap, future::Future, ops::Deref, path::PathBuf, sync::Arc};
 
 use anyhow::{anyhow, Error};
 use parking_lot::{lock_api::RwLockReadGuard, RwLock};
@@ -10,6 +10,7 @@ use wasmtime::{
 
 use crate::{
     bindings::{Plugin, Schema, Value},
+    datastream::DataStreamSnapshot,
     outputs::{OutputId, OutputSpec, Outputs, SpecChange},
     storage::WasmStorage,
 };
@@ -31,7 +32,8 @@ impl Default for CommanderEngineInternal {
         let mut linker: Linker<WasmStorage> = Linker::new(&engine);
         wasmtime_wasi::preview2::command::add_to_linker(&mut linker).unwrap();
         wasmtime_wasi_http::bindings::http::types::add_to_linker(&mut linker, |c| c).unwrap();
-        wasmtime_wasi_http::bindings::http::outgoing_handler::add_to_linker(&mut linker, |c| c).unwrap();
+        wasmtime_wasi_http::bindings::http::outgoing_handler::add_to_linker(&mut linker, |c| c)
+            .unwrap();
         Plugin::add_to_linker(&mut linker, |w| w).unwrap();
 
         CommanderEngineInternal {
@@ -147,7 +149,7 @@ impl CommanderProgramRun {
         RwLockReadGuard::map(self.outputs.read(), |outputs| &outputs.state)
     }
 
-    pub fn outputs_snapshot(&self) -> BTreeMap<OutputId, OutputSpec> {
+    pub fn outputs_snapshot(&self) -> BTreeMap<OutputId, DataStreamSnapshot> {
         self.outputs.read().snapshot()
     }
 }

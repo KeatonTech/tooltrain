@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+    font-family: 'Inconsolata', monospace;
+
+    --background: #1E2021;
+    --program: #282828;
+    --program-border: #3c3836;
+    --foreground: #ebdbb2;
+    --comment: #928374;
+    --orange: #d65d0e;
+    --yellow: #d79921;
+    --green: #98971a;
+    --cyan: #689d6a;
+    --blue: #458588;
+    --purple: #b16286;
+}
+
+.window {
+    background-color: var(--background);
+    color: var(--foreground);
+    display: flex;
+    flex-direction: column;
+    justify-content: stretch;
+    align-items: stretch;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+}
+
+header {
+    height: 44px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0 10px;
+    box-shadow: 0 0 3px 0 rgba(0,0,0,0.66);
+}
+
+main {
+    display: block;
+    flex-grow: 1;
+    overflow: scroll;
+}
+
+.program-container {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+    justify-content: left;
+    padding: 10px;
+}
+
+section {
+    min-width: 320px;
+    background-color: var(--program);
+    border: 1px solid var(--program-border);
+    border-radius: 4px;
+    padding: 10px;
+}

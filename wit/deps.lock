@@ -14,8 +14,8 @@ deps = ["clocks", "io"]
 
 [http]
 url = "https://github.com/WebAssembly/wasi-http/archive/main.tar.gz"
-sha256 = "6a477cde7b058689bdef06c3e2114c9c422a55ff55b8c9e2f875d3e30df42418"
-sha512 = "5c3291b050488c496f7dbe5e98983d62b22648546515774d44e3ab153772825c19c0220afaec389f423bb9dc5ec0cadc2257872e292ac102e1ffc7f46bcff039"
+sha256 = "f98ea7e81e54ea6669247b470b1af06224020fd0b57b1d867aa7603f8a0a703c"
+sha512 = "033263492089de9b3f513be2b9d778622375f01284c93a3a064081a514ee5d995d2bce09eaec4ed3045f17be39a1ab62fa620f38a334c278c63b4f4b226811c0"
 deps = ["cli", "clocks", "io", "random", "sockets"]
 
 [io]

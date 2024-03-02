@@ -1,3 +1,4 @@
+mod datastream;
 mod bindings;
 mod outputs;
 mod storage;

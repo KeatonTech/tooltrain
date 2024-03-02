@@ -1,7 +1,7 @@
 package commander:base;
 
 interface types {
-    record stream-spec {
+    record input-spec {
         name: string,
         description: string,
         data-type: data-type,
@@ -24,7 +24,7 @@ interface types {
     variant data-type {
         primitive(primitive),
         table-type(list<column>),
-        type-variable,
+        union(list<primitive>),
     }
 
     record column {
@@ -56,19 +56,50 @@ interface types {
     record schema {
         name: string,
         description: string,
-        arguments: list<stream-spec>
+        arguments: list<input-spec>
     }
 }
 
-interface streams {
-    use types.{value-event};
+interface outputs {
+    use types.{value};
 
-    resource output-handle {
-        send: func(event: value-event);
-        remove: func();
+    resource value-output {
+        set: func(value: value);
+        destroy: func();
     }
 
-    resource run-handle {}
+    variant list-output-request {
+        close,
+        load-more(/* limit= */u32),
+    }
+
+    resource list-output {
+        add: func(event: value);
+        pop: func();
+        clear: func();
+        set-has-more-rows: func(has-more-rows: bool);
+        destroy: func();
+        poll-request: func() -> list-output-request;
+    }
+
+    record tree-node {
+        id: string,
+        value: value,
+        has-children: bool
+    }
+
+    variant tree-output-request {
+        close,
+        load-children(/* parent= */string),
+    }
+
+    resource tree-output {
+        add: func(parent: option<string>, children: list<tree-node>);
+        remove: func(id: string);
+        clear: func();
+        destroy: func();
+        poll-request: func() -> tree-output-request;
+    }
 }
 
 world plugin {
@@ -76,16 +107,27 @@ world plugin {
     import wasi:filesystem/types@0.2.0;
     import wasi:http/outgoing-handler@0.2.0;
 
-    use types.{stream-spec, value, schema, data-type};
-    use streams.{run-handle, output-handle};
-    use wasi:filesystem/types@0.2.0.{descriptor};
+    use types.{value, schema, data-type, column};
+    use outputs.{value-output, list-output, tree-output};
 
-    import add-output: func(
+    import add-value-output: func(
         name: string,
         description: string,
         data-type: data-type,
         initial-value: option<value>,
-    ) -> output-handle;
+    ) -> value-output;
+
+    import add-list-output: func(
+        name: string,
+        description: string,
+        columns: list<column>,
+    ) -> list-output;
+
+    import add-tree-output: func(
+        name: string,
+        description: string,
+        data-type: data-type,
+    ) -> tree-output;
 
     export get-schema: func() -> schema;
 
