@@ -24,7 +24,7 @@ pub(crate) struct WasmStorage {
     table: ResourceTable,
     ctx: WasiCtx,
     http_ctx: WasiHttpCtx,
-    outputs: Arc<RwLock<Outputs>>,
+    outputs: Outputs,
 }
 
 impl WasiView for WasmStorage {
@@ -62,11 +62,11 @@ impl WasmStorage {
                 .inherit_stderr()
                 .build(),
             http_ctx: WasiHttpCtx,
-            outputs: Arc::new(RwLock::new(Outputs::default())),
+            outputs: Outputs::default(),
         }
     }
 
-    pub(crate) fn get_outputs(&self) -> Arc<RwLock<Outputs>> {
+    pub(crate) fn get_outputs(&self) -> Outputs {
         self.outputs.clone()
     }
 }
@@ -80,7 +80,7 @@ impl PluginImports for WasmStorage {
         data_type: DataType,
         initial_value: Option<Value>,
     ) -> Result<Resource<ValueOutput>, Error> {
-        Ok(Resource::new_own(self.outputs.write().add_value_output(
+        Ok(Resource::new_own(self.outputs.add_value_output(
             name,
             description,
             data_type,
@@ -94,7 +94,7 @@ impl PluginImports for WasmStorage {
         description: String,
         columns: Vec<Column>,
     ) -> Result<Resource<ListOutput>, Error> {
-        Ok(Resource::new_own(self.outputs.write().add_list_output(
+        Ok(Resource::new_own(self.outputs.add_list_output(
             name,
             description,
             columns,
@@ -107,7 +107,7 @@ impl PluginImports for WasmStorage {
         description: String,
         data_type: DataType,
     ) -> Result<Resource<TreeOutput>, Error> {
-        Ok(Resource::new_own(self.outputs.write().add_tree_output(
+        Ok(Resource::new_own(self.outputs.add_tree_output(
             name,
             description,
             data_type,
@@ -119,9 +119,7 @@ impl PluginImports for WasmStorage {
 impl HostValueOutput for WasmStorage {
     async fn set(&mut self, resource: Resource<ValueOutput>, value: Value) -> Result<(), Error> {
         self.outputs
-            .write()
-            .get_output_mut(resource.rep())
-            .ok_or_else(|| anyhow!("No resource exists with ID {}", resource.rep()))?
+            .get_output_mut(resource.rep())?
             .stream
             .try_get_value_mut()?
             .set(value)
@@ -132,7 +130,7 @@ impl HostValueOutput for WasmStorage {
     }
 
     fn drop(&mut self, resource: Resource<ValueOutput>) -> Result<(), Error> {
-        if self.outputs.write().remove_output(resource.rep())? {
+        if self.outputs.remove_output(resource.rep())? {
             Ok(())
         } else {
             Err(anyhow!("Could not destroy non-existent output"))
@@ -144,9 +142,7 @@ impl HostValueOutput for WasmStorage {
 impl HostListOutput for WasmStorage {
     async fn add(&mut self, resource: Resource<ListOutput>, value: Value) -> Result<(), Error> {
         self.outputs
-            .write()
-            .get_output_mut(resource.rep())
-            .ok_or_else(|| anyhow!("No resource exists with ID {}", resource.rep()))?
+            .get_output_mut(resource.rep())?
             .stream
             .try_get_list_mut()?
             .add(value)
@@ -154,9 +150,7 @@ impl HostListOutput for WasmStorage {
 
     async fn pop(&mut self, resource: Resource<ListOutput>) -> Result<(), Error> {
         self.outputs
-            .write()
-            .get_output_mut(resource.rep())
-            .ok_or_else(|| anyhow!("No resource exists with ID {}", resource.rep()))?
+            .get_output_mut(resource.rep())?
             .stream
             .try_get_list_mut()?
             .pop()
@@ -164,9 +158,7 @@ impl HostListOutput for WasmStorage {
 
     async fn clear(&mut self, resource: Resource<ListOutput>) -> Result<(), Error> {
         self.outputs
-            .write()
-            .get_output_mut(resource.rep())
-            .ok_or_else(|| anyhow!("No resource exists with ID {}", resource.rep()))?
+            .get_output_mut(resource.rep())?
             .stream
             .try_get_list_mut()?
             .clear()
@@ -178,9 +170,7 @@ impl HostListOutput for WasmStorage {
         has_more_rows: bool,
     ) -> Result<(), Error> {
         self.outputs
-            .write()
-            .get_output_mut(resource.rep())
-            .ok_or_else(|| anyhow!("No resource exists with ID {}", resource.rep()))?
+            .get_output_mut(resource.rep())?
             .stream
             .try_get_list_mut()?
             .set_has_more_rows(has_more_rows)
@@ -196,9 +186,7 @@ impl HostListOutput for WasmStorage {
     ) -> Result<ListOutputRequest, Error> {
         let mut stream = self
             .outputs
-            .read()
-            .get_output(resource.rep())
-            .ok_or_else(|| anyhow!("No resource exists with ID {}", resource.rep()))?
+            .get_output(resource.rep())?
             .stream
             .try_get_list()?
             .get_page_request_stream();
@@ -207,7 +195,7 @@ impl HostListOutput for WasmStorage {
     }
 
     fn drop(&mut self, resource: Resource<ListOutput>) -> Result<(), Error> {
-        if self.outputs.write().remove_output(resource.rep())? {
+        if self.outputs.remove_output(resource.rep())? {
             Ok(())
         } else {
             Err(anyhow!("Could not destroy non-existent output"))
@@ -224,9 +212,7 @@ impl HostTreeOutput for WasmStorage {
         nodes: Vec<TreeNode>,
     ) -> Result<(), Error> {
         self.outputs
-            .write()
-            .get_output_mut(resource.rep())
-            .ok_or_else(|| anyhow!("No resource exists with ID {}", resource.rep()))?
+            .get_output_mut(resource.rep())?
             .stream
             .try_get_tree_mut()?
             .add(parent, nodes)
@@ -238,9 +224,7 @@ impl HostTreeOutput for WasmStorage {
         parent: String,
     ) -> Result<(), Error> {
         self.outputs
-            .write()
-            .get_output_mut(resource.rep())
-            .ok_or_else(|| anyhow!("No resource exists with ID {}", resource.rep()))?
+            .get_output_mut(resource.rep())?
             .stream
             .try_get_tree_mut()?
             .remove(parent)
@@ -248,9 +232,7 @@ impl HostTreeOutput for WasmStorage {
 
     async fn clear(&mut self, resource: Resource<TreeOutput>) -> Result<(), Error> {
         self.outputs
-            .write()
-            .get_output_mut(resource.rep())
-            .ok_or_else(|| anyhow!("No resource exists with ID {}", resource.rep()))?
+            .get_output_mut(resource.rep())?
             .stream
             .try_get_tree_mut()?
             .clear()
@@ -266,9 +248,7 @@ impl HostTreeOutput for WasmStorage {
     ) -> Result<TreeOutputRequest, Error> {
         let mut stream = self
             .outputs
-            .read()
-            .get_output(resource.rep())
-            .ok_or_else(|| anyhow!("No resource exists with ID {}", resource.rep()))?
+            .get_output(resource.rep())?
             .stream
             .try_get_tree()?
             .get_request_children_stream();
@@ -277,7 +257,7 @@ impl HostTreeOutput for WasmStorage {
     }
 
     fn drop(&mut self, resource: Resource<TreeOutput>) -> Result<(), Error> {
-        if self.outputs.write().remove_output(resource.rep())? {
+        if self.outputs.remove_output(resource.rep())? {
             Ok(())
         } else {
             Err(anyhow!("Could not destroy non-existent output"))

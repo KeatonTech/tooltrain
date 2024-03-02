@@ -1,8 +1,14 @@
-use std::{collections::BTreeMap, future::Future, ops::Deref, path::PathBuf, sync::Arc};
+use std::{
+    collections::BTreeMap,
+    future::Future,
+    path::PathBuf,
+    sync::{Arc, Weak},
+};
 
 use anyhow::{anyhow, Error};
-use parking_lot::{lock_api::RwLockReadGuard, RwLock};
-use tokio::sync::{broadcast, watch};
+use parking_lot::{lock_api::RawRwLockDowngrade, RwLock};
+use tokio::sync::watch;
+use tokio_stream::{wrappers::BroadcastStream, Stream, StreamExt};
 use wasmtime::{
     component::{Component, Linker},
     Config, Engine, Store,
@@ -11,7 +17,7 @@ use wasmtime::{
 use crate::{
     bindings::{Plugin, Schema, Value},
     datastream::DataStreamSnapshot,
-    outputs::{OutputId, OutputSpec, Outputs, SpecChange},
+    outputs::{OutputId, Outputs},
     storage::WasmStorage,
 };
 
@@ -112,13 +118,13 @@ impl CommanderProgram {
 }
 
 pub struct CommanderProgramRun {
-    outputs: Arc<RwLock<Outputs>>,
+    outputs: Outputs,
     result_reader: watch::Receiver<Option<Arc<Result<String, Error>>>>,
 }
 
 impl CommanderProgramRun {
     fn new(
-        outputs: Arc<RwLock<Outputs>>,
+        outputs: Outputs,
         run_future: impl Future<Output = Result<Result<String, String>, Error>> + Send + 'static,
     ) -> Self {
         let (result_writer, result_reader) = watch::channel(None);
@@ -141,15 +147,7 @@ impl CommanderProgramRun {
         self.result_reader.borrow().as_ref().unwrap().clone()
     }
 
-    pub fn outputs_change(&self) -> broadcast::Receiver<SpecChange> {
-        self.outputs.read().updates.subscribe()
-    }
-
-    pub fn outputs_ref(&self) -> impl Deref<Target = BTreeMap<OutputId, OutputSpec>> + '_ {
-        RwLockReadGuard::map(self.outputs.read(), |outputs| &outputs.state)
-    }
-
-    pub fn outputs_snapshot(&self) -> BTreeMap<OutputId, DataStreamSnapshot> {
-        self.outputs.read().snapshot()
+    pub fn outputs(&self) -> Outputs {
+        self.outputs.clone()
     }
 }

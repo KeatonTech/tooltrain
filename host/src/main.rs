@@ -1,5 +1,5 @@
 use anyhow::Error;
-use commander_engine::{CommanderEngine, PrimitiveValue, ProgramSource, Value};
+use commander_engine::{CommanderEngine, PrimitiveValue, ProgramSource, Value, Outputs};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -13,8 +13,13 @@ async fn main() -> Result<(), Error> {
     let mut run = mastodon_program
         .run(vec![Value::PrimitiveValue(PrimitiveValue::StringValue("me.dm".to_string()))])
         .await?;
+
     let result = run.get_result().await;
     println!("Final result: {:?}", result);
     println!("Outputs: {:?}", run.outputs_snapshot());
     Ok(())
+}
+
+async fn listen_for_output_changes(outputs: &Outputs) {
+    
 }

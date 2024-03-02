@@ -21,7 +21,7 @@ pub enum DataStream {
 }
 
 #[derive(Debug)]
-pub enum DataStreamUpdates {
+pub enum DataStreamUpdate {
     List(broadcast::Receiver<ListChange>),
     Tree(broadcast::Receiver<TreeChange>),
     Value(broadcast::Receiver<ValueChange>)
