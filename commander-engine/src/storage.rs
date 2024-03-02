@@ -6,7 +6,7 @@ use crate::{
         },
         Column, DataType, ListOutput, PluginImports, TreeOutput, ValueOutput,
     },
-    outputs::Outputs,
+    structure::Outputs,
     Value,
 };
 

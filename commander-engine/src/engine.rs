@@ -1,7 +1,7 @@
 use std::{
     future::Future,
     path::PathBuf,
-    sync::{Arc},
+    sync::Arc,
 };
 
 use anyhow::{anyhow, Error};
@@ -15,7 +15,7 @@ use wasmtime::{
 
 use crate::{
     bindings::{Plugin, Schema, Value},
-    outputs::{Outputs},
+    outputs::Outputs,
     storage::WasmStorage,
 };
 

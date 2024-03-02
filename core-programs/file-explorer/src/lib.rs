@@ -86,19 +86,19 @@ impl FileExplorer {
 
         let children: Vec<TreeNode> = dir
             .filter_map(Result::ok)
-            .map(|entry| TreeNode {
-                id: format!("{}/{}", &relative_path, entry.file_name().to_string_lossy()),
-                has_children: entry.file_type().map(|t| t.is_dir()).unwrap_or(false),
-                value: Value::PrimitiveValue(PrimitiveValue::PathValue(
-                    full_pathbuf
-                        .clone()
-                        .join(entry.file_name())
-                        .components()
-                        .map(Component::as_os_str)
-                        .map(OsStr::to_string_lossy)
-                        .map(String::from)
-                        .collect(),
-                )),
+            .map(|entry| {
+                let path = full_pathbuf.clone().join(entry.file_name());
+                TreeNode {
+                    id: path.to_string_lossy().to_string(),
+                    has_children: entry.file_type().map(|t| t.is_dir()).unwrap_or(false),
+                    value: Value::PrimitiveValue(PrimitiveValue::PathValue(
+                        path.components()
+                            .map(Component::as_os_str)
+                            .map(OsStr::to_string_lossy)
+                            .map(String::from)
+                            .collect(),
+                    )),
+                }
             })
             .collect();
 
