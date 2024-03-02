@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    bindings::{Value},
+    bindings::Value,
     datastream::{
         DataStreamSnapshot, ListChange, ListStream, TreeChange, TreeStream,
         TreeStreamNode, ValueChange, ValueStream,
@@ -16,7 +16,7 @@ use anyhow::{anyhow, Error};
 use parking_lot::{
     MappedRwLockReadGuard, MappedRwLockWriteGuard,
 };
-use tokio::sync::broadcast::{Receiver};
+use tokio::sync::broadcast::Receiver;
 use tokio_stream::{once, wrappers::BroadcastStream, Stream, StreamExt};
 
 fn make_broadcast_stream<T: Clone + Send + 'static>(
