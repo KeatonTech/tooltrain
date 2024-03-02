@@ -8,7 +8,6 @@ mod value;
 
 use anyhow::{anyhow, Error};
 pub use list::{ListStream, ListChange};
-use tokio::sync::broadcast;
 pub use tree::{TreeStream, TreeChange, TreeStreamNode};
 pub use value::{ValueStream, ValueChange};
 
@@ -18,13 +17,6 @@ pub enum DataStream {
     List(ListStream),
     Tree(TreeStream),
     Value(ValueStream)
-}
-
-#[derive(Debug)]
-pub enum DataStreamUpdate {
-    List(broadcast::Receiver<ListChange>),
-    Tree(broadcast::Receiver<TreeChange>),
-    Value(broadcast::Receiver<ValueChange>)
 }
 
 #[derive(Clone, Debug)]
