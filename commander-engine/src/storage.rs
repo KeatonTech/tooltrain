@@ -13,8 +13,8 @@ use crate::{
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use cap_std::fs::Dir;
-use parking_lot::RwLock;
-use std::sync::Arc;
+
+
 use wasmtime_wasi_http::{WasiHttpCtx, WasiHttpView};
 
 use wasmtime::component::*;

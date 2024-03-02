@@ -1,14 +1,13 @@
 use std::{
-    collections::BTreeMap,
     future::Future,
     path::PathBuf,
-    sync::{Arc, Weak},
+    sync::{Arc},
 };
 
 use anyhow::{anyhow, Error};
-use parking_lot::{lock_api::RawRwLockDowngrade, RwLock};
+
 use tokio::sync::watch;
-use tokio_stream::{wrappers::BroadcastStream, Stream, StreamExt};
+
 use wasmtime::{
     component::{Component, Linker},
     Config, Engine, Store,
@@ -16,8 +15,7 @@ use wasmtime::{
 
 use crate::{
     bindings::{Plugin, Schema, Value},
-    datastream::DataStreamSnapshot,
-    outputs::{OutputId, Outputs},
+    outputs::{Outputs},
     storage::WasmStorage,
 };
 
