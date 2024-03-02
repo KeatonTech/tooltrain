@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-wit-bindgen = "0.18.0"
+wit-bindgen = "0.20.0"
 
 [package.metadata.component]
 package = "commander:base"

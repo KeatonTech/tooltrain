@@ -1,13 +1,6 @@
-use commander::base::types::{
-    Column, EnumVariant, Primitive, PrimitiveValue, StreamSpec, ValueEvent,
-};
-
 wit_bindgen::generate!({
     path: "../wit",
     world: "plugin",
-    exports: {
-        world: ProgramNameProgram,
-    },
 });
 
 struct ProgramNameProgram;
@@ -25,3 +18,5 @@ impl Guest for ProgramNameProgram {
         todo!("Implement me!");
     }
 }
+
+export!(ProgramNameProgram);

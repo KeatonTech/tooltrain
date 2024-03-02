@@ -9,9 +9,6 @@ use wasi::filesystem::types::{
 wit_bindgen::generate!({
     path: "../wit",
     world: "plugin",
-    exports: {
-        world: ListProgram,
-    },
 });
 
 enum FileEntityType {
@@ -129,7 +126,7 @@ impl ListProgram {
             )
             .map_err(|code| format!("Error reading {} (code: {code})", file_entry.name))?;
 
-            output.add(&Value::TableValue(vec![vec![
+            output.add(&Value::CompoundValue(vec![
                 PrimitiveValue::StringValue(file_entry.name),
                 PrimitiveValue::NumberValue(file_stat.size as f64),
                 ListProgram::file_stat_to_type_enum(&file_stat),
@@ -139,7 +136,7 @@ impl ListProgram {
                         .map(|t| t.seconds * 1000)
                         .unwrap_or(0u64),
                 ),
-            ]]));
+            ]));
         }
         Ok("Done".to_string())
     }
@@ -168,3 +165,5 @@ impl ListProgram {
         }
     }
 }
+
+export!(ListProgram);
