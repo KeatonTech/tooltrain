@@ -3,7 +3,7 @@
 members = [
     "commander-engine",
     "host",
-    "mastodon-feed",
+    "example-programs/mastodon-feed",
     "commander-ui/src-tauri",
     "core-programs/ls",
     "core-programs/file-explorer",

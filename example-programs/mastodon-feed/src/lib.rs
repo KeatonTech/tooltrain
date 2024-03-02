@@ -11,7 +11,7 @@ use wasi::{
 };
 
 wit_bindgen::generate!({
-    path: "../wit",
+    path: "../../wit",
     world: "plugin",
 });
 
