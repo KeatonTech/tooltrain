@@ -1378,6 +1378,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "file-explorer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "wit-bindgen",
+]
+
+[[package]]
 name = "filetime"
 version = "0.2.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2553,6 +2561,14 @@ dependencies = [
  "serde_json",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "ls"
+version = "0.1.0"
+dependencies = [
+ "lazy_static",
+ "wit-bindgen",
 ]
 
 [[package]]

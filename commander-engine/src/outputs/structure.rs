@@ -40,7 +40,7 @@ pub struct OutputMetadata {
 }
 
 #[derive(Debug)]
-pub(crate) struct OutputState {
+pub(super) struct OutputState {
     pub metadata: OutputMetadata,
     pub stream: DataStream,
 }
@@ -138,7 +138,7 @@ impl Outputs {
         )
     }
 
-    pub(crate) fn get_output(
+    pub(super) fn get_output(
         &self,
         id: OutputId,
     ) -> Result<MappedRwLockReadGuard<'_, OutputState>, Error> {
@@ -146,7 +146,7 @@ impl Outputs {
             .map_err(|_| anyhow!("Output does not exist"))
     }
 
-    pub(crate) fn get_output_mut(
+    pub(super) fn get_output_mut(
         &self,
         id: OutputId,
     ) -> Result<MappedRwLockWriteGuard<'_, OutputState>, Error> {

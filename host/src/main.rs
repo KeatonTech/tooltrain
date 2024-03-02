@@ -1,8 +1,7 @@
-
-
 use anyhow::{anyhow, Error};
 use commander_engine::{
-    CommanderEngine, OutputChange, OutputHandle, Outputs, PrimitiveValue, ProgramSource, TreeOutputHandle, Value
+    CommanderEngine, OutputChange, OutputHandle, Outputs, PrimitiveValue, ProgramSource,
+    TreeOutputHandle, Value,
 };
 
 use tokio_stream::StreamExt;
@@ -12,11 +11,11 @@ use tokio_util::io::ReaderStream;
 async fn main() -> Result<(), Error> {
     let engine = CommanderEngine::new();
     let file_explorer_program_source = ProgramSource::FilePath(
-        std::path::Path::new("./core-programs/target/wasm32-wasi/debug/file_explorer.wasm")
+        std::path::Path::new("./target/wasm32-wasi/debug/file_explorer.wasm")
             .to_owned(),
     );
-    let mut file_explporer_program = engine.open_program(file_explorer_program_source).await?;
-    let mut run = file_explporer_program
+    let mut file_explorer_program = engine.open_program(file_explorer_program_source).await?;
+    let mut run = file_explorer_program
         .run(vec![Value::PrimitiveValue(PrimitiveValue::PathValue(
             vec!["Users".to_string()],
         ))])
@@ -29,8 +28,8 @@ async fn main() -> Result<(), Error> {
     let mut input_stream = ReaderStream::new(tokio::io::stdin())
         .take_while(|r| r.is_ok())
         .filter_map(Result::ok)
-        .map(|bytes| String::from_utf8_lossy(&bytes).to_string());
-        
+        .map(|bytes| String::from_utf8_lossy(&bytes).trim().to_string());
+
     while let Some(path) = input_stream.next().await {
         println!("Opening {}", path);
         tree_output.request_children(path)?;

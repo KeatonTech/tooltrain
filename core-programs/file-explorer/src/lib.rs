@@ -70,35 +70,42 @@ impl FileExplorer {
             return;
         }
 
-        let full_pathbuf = self.root.join(PathBuf::from_iter(relative_path.clone()));
-        let relative_path = relative_path.join("/");
+        let relative_pathbuf = PathBuf::from_iter(relative_path.clone());
+        let full_pathbuf = self.root.join(relative_pathbuf.clone());
 
         let Ok(dir) = fs::read_dir(full_pathbuf.clone()) else {
-            eprintln!("Directory does not exist: {}", &relative_path);
+            eprintln!(
+                "Directory does not exist: {}",
+                full_pathbuf.to_string_lossy()
+            );
             return;
         };
 
         let parent_node_id = if relative_path.is_empty() {
             None
         } else {
-            Some(relative_path.clone())
+            Some(relative_pathbuf.clone().to_string_lossy().to_string())
         };
 
         let children: Vec<TreeNode> = dir
             .filter_map(Result::ok)
-            .map(|entry| {
-                let path = full_pathbuf.clone().join(entry.file_name());
-                TreeNode {
-                    id: path.to_string_lossy().to_string(),
-                    has_children: entry.file_type().map(|t| t.is_dir()).unwrap_or(false),
-                    value: Value::PrimitiveValue(PrimitiveValue::PathValue(
-                        path.components()
-                            .map(Component::as_os_str)
-                            .map(OsStr::to_string_lossy)
-                            .map(String::from)
-                            .collect(),
-                    )),
-                }
+            .map(|entry| TreeNode {
+                id: relative_pathbuf
+                    .clone()
+                    .join(entry.file_name())
+                    .to_string_lossy()
+                    .to_string(),
+                has_children: entry.file_type().map(|t| t.is_dir()).unwrap_or(false),
+                value: Value::PrimitiveValue(PrimitiveValue::PathValue(
+                    full_pathbuf
+                        .clone()
+                        .join(entry.file_name())
+                        .components()
+                        .map(Component::as_os_str)
+                        .map(OsStr::to_string_lossy)
+                        .map(String::from)
+                        .collect(),
+                )),
             })
             .collect();
 
