@@ -1,6 +1,6 @@
 use anyhow::Error;
 use commander_engine::{CommanderEngine, OutputChange, OutputId, Outputs, PrimitiveValue, ProgramSource, Value};
-use tokio_stream::{Stream, StreamExt};
+use tokio_stream::{StreamExt};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
