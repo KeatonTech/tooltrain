@@ -3,12 +3,11 @@ use std::{future::Future, path::PathBuf, sync::Arc};
 use anyhow::{anyhow, Error};
 
 use commander_data::{CommanderCoder, CommanderDataType, CommanderValue};
-use parking_lot::RwLock;
+
 use tokio::sync::watch;
 
 use wasmtime::{
-    component::{Component, Linker},
-    AsContext, Config, Engine, Store,
+    component::{Component, Linker}, Config, Engine, Store,
 };
 
 use crate::{
@@ -16,7 +15,6 @@ use crate::{
         inputs,
         streaming::{Input, StreamingPlugin},
     },
-    datastream::DataStream,
     streaming::{DataStreamStorage, InputHandle, Inputs, Outputs, ValueInputHandle, WasmStorage},
 };
 

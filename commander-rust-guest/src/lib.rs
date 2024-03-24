@@ -40,7 +40,7 @@ impl Stream for &ValueInput {
 
     fn poll_next(
         self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
+        _cx: &mut std::task::Context<'_>,
     ) -> Poll<Option<Self::Item>> {
         match self.poll_change() {
             Some(change) => std::task::Poll::Ready(Some(change)),
@@ -65,7 +65,7 @@ impl Stream for ListInput {
 
     fn poll_next(
         self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
+        _cx: &mut std::task::Context<'_>,
     ) -> Poll<Option<Self::Item>> {
         match self.poll_change() {
             Some(change) => std::task::Poll::Ready(Some(change)),
@@ -79,7 +79,7 @@ impl Stream for TreeInput {
 
     fn poll_next(
         self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
+        _cx: &mut std::task::Context<'_>,
     ) -> Poll<Option<Self::Item>> {
         match self.poll_change() {
             Some(change) => std::task::Poll::Ready(Some(change)),
@@ -93,7 +93,7 @@ impl Stream for ListOutput {
 
     fn poll_next(
         self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
+        _cx: &mut std::task::Context<'_>,
     ) -> Poll<Option<Self::Item>> {
         match self.poll_request() {
             Some(change) => std::task::Poll::Ready(Some(change)),
@@ -107,7 +107,7 @@ impl Stream for TreeOutput {
 
     fn poll_next(
         self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
+        _cx: &mut std::task::Context<'_>,
     ) -> Poll<Option<Self::Item>> {
         match self.poll_request() {
             Some(change) => std::task::Poll::Ready(Some(change)),

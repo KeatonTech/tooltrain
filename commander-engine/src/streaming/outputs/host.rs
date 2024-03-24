@@ -13,7 +13,7 @@ use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 
 use commander_data::{
-    CommanderCoder, CommanderDataType
+    CommanderCoder
 };
 use wasmtime::component::*;
 
@@ -104,7 +104,7 @@ impl HostListOutput for WasmStorage {
             .get_page_request_stream();
         Ok(stream
             .try_recv()
-            .map(|page_length| ListOutputRequest::LoadMore(page_length))
+            .map(ListOutputRequest::LoadMore)
             .ok())
     }
 
@@ -182,7 +182,7 @@ impl HostTreeOutput for WasmStorage {
             .get_request_children_stream();
         Ok(stream
             .try_recv()
-            .map(|parent_id| TreeOutputRequest::LoadChildren(parent_id))
+            .map(TreeOutputRequest::LoadChildren)
             .ok())
     }
 

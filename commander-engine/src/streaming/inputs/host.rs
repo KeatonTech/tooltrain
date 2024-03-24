@@ -234,7 +234,7 @@ impl HostTreeInput for WasmStorage {
             .subscribe()
             .try_recv();
         match tree_change {
-            Ok(TreeChange::Add { parent, children }) => {
+            Ok(TreeChange::Add { parent: _, children }) => {
                 Ok(Some(streaming_inputs::TreeChange::Append(
                     children.into_iter().map(|c| (*c).clone()).collect(),
                 )))
@@ -265,7 +265,7 @@ impl HostTreeInput for WasmStorage {
             .recv()
             .await;
         match tree_change {
-            Ok(TreeChange::Add { parent, children }) => Ok(streaming_inputs::TreeChange::Append(
+            Ok(TreeChange::Add { parent: _, children }) => Ok(streaming_inputs::TreeChange::Append(
                 children.into_iter().map(|c| (*c).clone()).collect(),
             )),
             Ok(TreeChange::Remove(removed)) => {

@@ -3,12 +3,11 @@ use std::{path::PathBuf, str::FromStr};
 use anyhow::{anyhow, Error};
 use commander_data::CommanderPathDataType;
 use commander_engine::{
-    datastream::TreeStreamNode,
     streaming::{OutputChange, OutputHandle, Outputs, TreeOutputHandle},
     CommanderEngine, ProgramSource, CommanderStreamingProgramRun,
 };
 
-use tokio_stream::{Stream, StreamExt};
+use tokio_stream::{StreamExt};
 use tokio_util::io::ReaderStream;
 
 #[tokio::main]
