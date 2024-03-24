@@ -8,11 +8,13 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.79"
 async-trait = "0.1.77"
-cap-std = "2.0.1"
+cap-std = "3.0.0"
 lazy_static = "1.4.0"
-parking_lot = "0.12.1"
+parking_lot ={version =  "0.12.1", features = ["send_guard"]}
 tokio = { version = "1.36.0", features = ["macros"] }
 tokio-stream = { version = "0.1.14", features = ["sync"] }
-wasmtime = { version = "18.0.1", features = ["component-model", "async"] }
-wasmtime-wasi = { version = "18.0.1", features = ["tokio"] }
-wasmtime-wasi-http = "18.0.1"
+wasmtime = { version = "19.0.0", features = ["component-model", "async"] }
+wasmtime-wasi = "19.0.0"
+wasmtime-wasi-http = "19.0.0"
+commander-data = { path = "../commander-data" }
+derive_more = "0.99.7"

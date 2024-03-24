@@ -1,0 +1,56 @@
+type = _{ (static_type | trigger) ~ EOI }
+
+static_type = _{
+    primitive_type
+  | list
+  | set
+  | map
+  | enum
+  | tuple
+  | struct
+}
+
+primitive_type = _{
+    boolean
+  | number
+  | string
+  | bytes
+  | color
+  | path
+  | url
+  | json
+  | svg
+}
+
+trigger = { "trigger" }
+
+boolean = { "boolean" }
+number  = { "number" }
+string  = { "string" }
+bytes   = { "bytes" }
+color   = { "color" }
+path    = { "path" }
+url     = { "url" }
+json    = { "json" }
+svg     = { "svg" }
+
+single_type_arg = _{ "<" ~ static_type ~ ">" }
+map_type_args   = _{ "<" ~ primitive_type ~ "," ~ static_type ~ ">" }
+tuple_size      = { ASCII_DIGIT+ }
+tuple_type_args = _{ "<" ~ primitive_type ~ "," ~ tuple_size ~ ">" }
+type_arg_name   = { ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
+named_type_arg  = _{ type_arg_name ~ ":" ~ static_type }
+named_type_args = _{ "<" ~ named_type_arg ~ ("," ~ named_type_arg)* ~ ">" }
+enum_variant    = { ASCII_ALPHA_UPPER ~ (ASCII_ALPHA_UPPER | ASCII_DIGIT | "_")* }
+enum_variants   = _{ "<" ~ enum_variant ~ ("," ~ enum_variant)* ~ ">" }
+
+type_name = { ASCII_ALPHA_UPPER ~ (ASCII_ALPHANUMERIC | "_")* }
+
+list   = { "list" ~ type_name? ~ single_type_arg }
+set    = { "set" ~ type_name? ~ single_type_arg }
+map    = { "map" ~ type_name? ~ map_type_args }
+enum   = { "enum" ~ type_name ~ enum_variants }
+tuple  = { "tuple" ~ type_name ~ tuple_type_args }
+struct = { "struct" ~ type_name ~ named_type_args }
+
+WHITESPACE = _{ " " | "\n" }

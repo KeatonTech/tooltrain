@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use anyhow::{anyhow, Error};
 use tokio::sync::broadcast;
 
-use crate::bindings::commander::base::outputs::TreeNode;
+use crate::bindings::streaming_outputs::TreeNode;
 
 #[derive(Clone, Debug)]
 pub enum TreeChange {

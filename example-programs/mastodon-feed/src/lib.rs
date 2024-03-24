@@ -1,19 +1,14 @@
-use commander::base::{
-    outputs::ListOutputRequest,
-    types::{InputSpec, Primitive, PrimitiveValue},
-};
-use wasi::{
+use commander_data::{CommanderCoder, CommanderPathDataType};
+use commander_rust_guest::commander::base::inputs::ArgumentSpec;
+use commander_rust_guest::commander::base::streaming_outputs::ListOutputRequest;
+use commander_rust_guest::wasi::{
     http::{
         self,
         types::{Fields, IncomingBody, OutgoingRequest, Scheme},
     },
     io::streams::StreamError,
 };
-
-wit_bindgen::generate!({
-    path: "../../wit",
-    world: "plugin",
-});
+use commander_rust_guest::{Guest, Schema};
 
 mod parse;
 
@@ -24,11 +19,13 @@ impl Guest for MastodonFeedProgram {
         Schema {
             name: "Mastodon Public Feed".to_string(),
             description: "Returns the public timeline from a Mastodon instance".to_string(),
-            arguments: vec![InputSpec {
+            arguments: vec![ArgumentSpec {
                 name: "instance".to_string(),
                 description: "The Mastodon instance to fetch the public feed from".to_string(),
-                data_type: DataType::Primitive(Primitive::StringType),
+                data_type: CommanderPathDataType {}.type_string(),
+                supports_updates: false
             }],
+            performs_state_change: false
         }
     }
 

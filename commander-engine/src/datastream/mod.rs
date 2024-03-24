@@ -1,28 +1,28 @@
 use std::sync::Arc;
-
-use crate::Value;
+use derive_more::{TryInto, IsVariant, Unwrap};
 
 mod list;
 mod tree;
 mod value;
 
 use anyhow::{anyhow, Error};
+use commander_data::CommanderValue;
 pub use list::{ListChange, ListStream};
 pub use tree::{TreeChange, TreeStream, TreeStreamNode};
 pub use value::{ValueChange, ValueStream};
 
-#[derive(Debug)]
+#[derive(Debug, TryInto, IsVariant, Unwrap)]
 pub enum DataStream {
     List(ListStream),
     Tree(TreeStream),
     Value(ValueStream),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, TryInto, IsVariant, Unwrap)]
 pub enum DataStreamSnapshot {
-    List(Vec<Arc<Value>>),
+    List(Vec<Arc<CommanderValue>>),
     Tree(Vec<TreeStreamNode>),
-    Value(Option<Arc<Value>>),
+    Value(Option<Arc<CommanderValue>>),
 }
 
 impl DataStream {

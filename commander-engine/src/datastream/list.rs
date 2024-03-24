@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
-use crate::Value;
 use anyhow::{anyhow, Error};
+use commander_data::CommanderValue;
 use tokio::sync::broadcast;
 
 #[derive(Clone, Debug)]
 pub enum ListChange {
-    Add(Arc<Value>),
-    Pop(Arc<Value>),
+    Add(Arc<CommanderValue>),
+    Pop(Arc<CommanderValue>),
     HasMorePages(bool),
     Clear,
     Destroy,
@@ -15,7 +15,7 @@ pub enum ListChange {
 
 #[derive(Debug)]
 pub struct ListStream {
-    value: Vec<Arc<Value>>,
+    value: Vec<Arc<CommanderValue>>,
     updates: broadcast::Sender<ListChange>,
     has_more_rows: bool,
     page_load_sender: broadcast::Sender<u32>,
@@ -33,11 +33,11 @@ impl ListStream {
         }
     }
 
-    pub fn snapshot(&self) -> Vec<Arc<Value>> {
+    pub fn snapshot(&self) -> Vec<Arc<CommanderValue>> {
         self.value.to_vec()
     }
 
-    pub(crate) fn add(&mut self, value: Value) -> Result<(), Error> {
+    pub(crate) fn add(&mut self, value: CommanderValue) -> Result<(), Error> {
         let value_arc = Arc::new(value);
         self.value.push(value_arc.clone());
         let _ = self.updates.send(ListChange::Add(value_arc));

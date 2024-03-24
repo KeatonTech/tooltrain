@@ -1,11 +1,12 @@
 [workspace]
 
 members = [
+    "commander-data",
     "commander-engine",
     "host",
     "example-programs/mastodon-feed",
     "commander-ui/src-tauri",
     "core-programs/ls",
-    "core-programs/file-explorer",
+    "core-programs/file-explorer", "commander-rust-guest",
 ]
 exclude = ["program_template"]

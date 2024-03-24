@@ -1,10 +1,14 @@
+use std::{path::PathBuf, str::FromStr};
+
 use anyhow::{anyhow, Error};
+use commander_data::CommanderPathDataType;
 use commander_engine::{
-    CommanderEngine, OutputChange, OutputHandle, Outputs, PrimitiveValue, ProgramSource,
-    TreeOutputHandle, Value,
+    datastream::TreeStreamNode,
+    streaming::{OutputChange, OutputHandle, Outputs, TreeOutputHandle},
+    CommanderEngine, ProgramSource, CommanderStreamingProgramRun,
 };
 
-use tokio_stream::StreamExt;
+use tokio_stream::{Stream, StreamExt};
 use tokio_util::io::ReaderStream;
 
 #[tokio::main]
@@ -15,13 +19,18 @@ async fn main() -> Result<(), Error> {
     );
     let mut file_explorer_program = engine.open_program(file_explorer_program_source).await?;
     let mut run = file_explorer_program
-        .run(vec![Value::PrimitiveValue(PrimitiveValue::PathValue(
-            vec!["Users".to_string()],
-        ))])
-        .await?;
+        .run()
+        .await?
+        .with_static_input(
+            "Path".to_owned(),
+            "The base file path to load".to_owned(),
+            CommanderPathDataType {},
+            PathBuf::from_str("Users").unwrap(),
+        )?
+        .start();
 
-    let tree_output = get_tree_output(run.outputs()).await?;
-    tokio::spawn(listen_for_tree_changes(tree_output.clone()));
+    let tree_output = get_tree_output(&run.outputs()).await?;
+    tokio::spawn(listen_for_tree_changes(tree_output.clone(), run.clone()));
 
     println!("Enter directories to inspect then press enter.");
     let mut input_stream = ReaderStream::new(tokio::io::stdin())
@@ -31,7 +40,7 @@ async fn main() -> Result<(), Error> {
 
     while let Some(path) = input_stream.next().await {
         println!("Opening {}", path);
-        tree_output.request_children(path)?;
+        tree_output.load(run.outputs()).request_children(path)?;
     }
 
     let result = run.get_result().await;
@@ -40,7 +49,7 @@ async fn main() -> Result<(), Error> {
     Ok(())
 }
 
-async fn get_tree_output(outputs: Outputs) -> Result<TreeOutputHandle, Error> {
+async fn get_tree_output(outputs: &Outputs<'_>) -> Result<TreeOutputHandle, Error> {
     let mut stream = outputs.updates();
     while let Some(output_change) = stream.next().await {
         println!("Received an output change: {:?}", output_change);
@@ -55,8 +64,9 @@ async fn get_tree_output(outputs: Outputs) -> Result<TreeOutputHandle, Error> {
     Err(anyhow!("Tree output was never added"))
 }
 
-async fn listen_for_tree_changes(handle: TreeOutputHandle) {
-    let mut stream = handle.values().unwrap();
+async fn listen_for_tree_changes(tree_output_handle: TreeOutputHandle, run: CommanderStreamingProgramRun) {
+    let binding = tree_output_handle.load(run.outputs());
+    let mut stream = binding.values().unwrap();
     while let Some(tree_change) = stream.next().await {
         println!("Received tree change: {:?}", tree_change);
     }

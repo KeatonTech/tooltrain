@@ -1,12 +1,40 @@
-use commander::base::types::{EnumVariant, InputSpec, Primitive, PrimitiveValue};
-use lazy_static::lazy_static;
-use wasi::filesystem::types::{
-    Descriptor, DescriptorFlags, DescriptorStat, DescriptorType, OpenFlags, PathFlags,
+use commander_data::{
+    CommanderCoder, CommanderEnumDataType, CommanderNumberDataType, CommanderPathDataType,
+    CommanderStringDataType, CommanderStructDataType, CommanderStructTypeBuilder, CommanderValue,
 };
+use commander_rust_guest::{
+    add_list_output,
+    commander::base::{inputs::ArgumentSpec, streaming_inputs::Input},
+    export_guest,
+    wasi::{
+        self,
+        filesystem::types::{
+            Descriptor, DescriptorFlags, DescriptorStat, DescriptorType, OpenFlags, PathFlags,
+        },
+    },
+    Guest, ListOutput, Schema,
+};
+use maplit::btreemap;
+use once_cell::sync::Lazy;
 
-wit_bindgen::generate!({
-    path: "../../wit",
-    world: "plugin",
+static FILE_ENTITY_TYPE: Lazy<CommanderEnumDataType> = Lazy::new(|| {
+    CommanderEnumDataType::new(
+        "FileEntityType".to_string(),
+        vec![
+            "FILE".to_string(),
+            "DIRECTORY".to_string(),
+            "SYMLINK".to_string(),
+            "OTHER".to_string(),
+        ],
+    )
+});
+
+static FILE_STRUCT: Lazy<CommanderStructDataType> = Lazy::new(|| {
+    CommanderStructTypeBuilder::new("File")
+        .add_field("name", CommanderStringDataType {})
+        .add_field("size", CommanderNumberDataType {})
+        .add_field("type", FILE_ENTITY_TYPE.clone())
+        .build()
 });
 
 enum FileEntityType {
@@ -17,60 +45,14 @@ enum FileEntityType {
 }
 
 impl FileEntityType {
-    fn as_commander_data_type() -> Primitive {
-        Primitive::EnumType(vec![
-            EnumVariant {
-                name: "file".to_string(),
-                description: "A regular file".to_string(),
-            },
-            EnumVariant {
-                name: "directory".to_string(),
-                description: "A directory".to_string(),
-            },
-            EnumVariant {
-                name: "symlink".to_string(),
-                description: "A symbolic link".to_string(),
-            },
-            EnumVariant {
-                name: "other".to_string(),
-                description: "Some other kind of entity not represented here".to_string(),
-            },
-        ])
-    }
-
-    fn to_commander_value(&self) -> PrimitiveValue {
+    fn to_commander_value(&self) -> CommanderValue {
         match self {
-            FileEntityType::File => PrimitiveValue::EnumValue(0),
-            FileEntityType::Directory => PrimitiveValue::EnumValue(1),
-            FileEntityType::Symlink => PrimitiveValue::EnumValue(2),
-            FileEntityType::Other => PrimitiveValue::EnumValue(3),
+            FileEntityType::File => FILE_ENTITY_TYPE.get_variant("FILE").unwrap().into(),
+            FileEntityType::Directory => FILE_ENTITY_TYPE.get_variant("DIRECTORY").unwrap().into(),
+            FileEntityType::Symlink => FILE_ENTITY_TYPE.get_variant("SYMLINK").unwrap().into(),
+            FileEntityType::Other => FILE_ENTITY_TYPE.get_variant("OTHER").unwrap().into(),
         }
     }
-}
-
-lazy_static! {
-    static ref OUTPUT_TABLE_COLUMNS: Vec<Column> = vec![
-        Column {
-            name: "name".to_string(),
-            description: "The name of the file".to_string(),
-            data_type: Primitive::StringType,
-        },
-        Column {
-            name: "type".to_string(),
-            description: "The type of the filesystem entity".to_string(),
-            data_type: FileEntityType::as_commander_data_type(),
-        },
-        Column {
-            name: "size".to_string(),
-            description: "The size of the file, in bytes".to_string(),
-            data_type: Primitive::NumberType,
-        },
-        Column {
-            name: "accessed_at".to_string(),
-            description: "The time when the file was last accessed".to_string(),
-            data_type: Primitive::TimestampType,
-        },
-    ];
 }
 
 struct ListProgram;
@@ -80,24 +62,33 @@ impl Guest for ListProgram {
         Schema {
             name: "List Files".to_string(),
             description: "List files in a directory".to_string(),
-            arguments: vec![InputSpec {
+            arguments: vec![ArgumentSpec {
                 name: "directory".to_string(),
                 description: "The top-level directory to list files in".to_string(),
-                data_type: DataType::Primitive(Primitive::PathType),
+                data_type: CommanderPathDataType {}.type_string(),
+                supports_updates: false,
             }],
+            performs_state_change: false,
         }
     }
 
-    fn run(mut inputs: Vec<Value>) -> Result<String, String> {
-        let Some(Value::PrimitiveValue(PrimitiveValue::PathValue(path))) = inputs.pop() else {
-            Err("Invalid input".to_string())?
+    fn run(inputs: Vec<Input>) -> Result<String, String> {
+        let Some(Input::ValueInput(path)) = &inputs.first() else {
+            return Err("Invalid input".to_string());
         };
+        let pathbuf = CommanderPathDataType {}
+            .decode(&path.get().unwrap())
+            .map_err(|_| "Could not read path".to_string())?;
+        let path_components: Vec<String> = pathbuf
+            .components()
+            .map(|c| c.as_os_str().to_string_lossy().to_string())
+            .collect();
 
         let (base, _) = wasi::filesystem::preopens::get_directories().pop().unwrap();
-        let descriptor = ListProgram::navigate_to_dir(base, &path)?;
+        let descriptor = ListProgram::navigate_to_dir(base, &path_components)?;
 
         let list_output_handle =
-            add_list_output("Files", "The list of files", &OUTPUT_TABLE_COLUMNS);
+            add_list_output("Files", "The list of files", &FILE_STRUCT.type_string());
         ListProgram::list_files_in_dir(descriptor, list_output_handle)
     }
 }
@@ -121,17 +112,15 @@ impl ListProgram {
             )
             .map_err(|code| format!("Error reading {} (code: {code})", file_entry.name))?;
 
-            output.add(&Value::CompoundValue(vec![
-                PrimitiveValue::StringValue(file_entry.name),
-                PrimitiveValue::NumberValue(file_stat.size as f64),
-                ListProgram::file_stat_to_type_enum(&file_stat),
-                PrimitiveValue::TimestampValue(
-                    file_stat
-                        .data_access_timestamp
-                        .map(|t| t.seconds * 1000)
-                        .unwrap_or(0u64),
-                ),
-            ]));
+            output.add(
+                &FILE_STRUCT
+                    .encode(btreemap! {
+                        "name".to_string() => file_entry.name.into(),
+                        "size".to_string() => (file_stat.size as f64).into(),
+                        "type".to_string() => ListProgram::file_stat_to_type_enum(&file_stat),
+                    })
+                    .unwrap(),
+            );
         }
         Ok("Done".to_string())
     }
@@ -151,7 +140,7 @@ impl ListProgram {
         ListProgram::navigate_to_dir(next_dir, &path[1..])
     }
 
-    fn file_stat_to_type_enum(stat: &DescriptorStat) -> PrimitiveValue {
+    fn file_stat_to_type_enum(stat: &DescriptorStat) -> CommanderValue {
         match stat.type_ {
             DescriptorType::RegularFile => FileEntityType::File.to_commander_value(),
             DescriptorType::Directory => FileEntityType::Directory.to_commander_value(),
@@ -161,4 +150,4 @@ impl ListProgram {
     }
 }
 
-export!(ListProgram);
+export_guest!(ListProgram);

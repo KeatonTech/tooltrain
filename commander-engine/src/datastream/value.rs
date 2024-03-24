@@ -1,23 +1,23 @@
 use std::sync::Arc;
 
-use crate::Value;
 use anyhow::Error;
+use commander_data::CommanderValue;
 use tokio::sync::broadcast;
 
 #[derive(Clone, Debug)]
 pub enum ValueChange {
-    Set(Arc<Value>),
+    Set(Arc<CommanderValue>),
     Destroy,
 }
 
 #[derive(Debug)]
 pub struct ValueStream {
-    value: Option<Arc<Value>>,
+    value: Option<Arc<CommanderValue>>,
     updates: broadcast::Sender<ValueChange>,
 }
 
 impl ValueStream {
-    pub(crate) fn new(initial: Option<Value>) -> Self {
+    pub(crate) fn new(initial: Option<CommanderValue>) -> Self {
         let (updates, _) = broadcast::channel::<ValueChange>(128);
         ValueStream {
             value: initial.map(Arc::new),
@@ -25,11 +25,11 @@ impl ValueStream {
         }
     }
 
-    pub fn snapshot(&self) -> Option<Arc<Value>> {
+    pub fn snapshot(&self) -> Option<Arc<CommanderValue>> {
         self.value.clone()
     }
 
-    pub(crate) fn set(&mut self, value: Value) -> Result<(), Error> {
+    pub(crate) fn set(&mut self, value: CommanderValue) -> Result<(), Error> {
         let value_arc = Arc::new(value);
         self.value = Some(value_arc.clone());
         let _ = self.updates.send(ValueChange::Set(value_arc));
