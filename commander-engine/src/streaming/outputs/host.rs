@@ -12,21 +12,16 @@ use crate::{
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 
-use commander_data::{
-    CommanderCoder
-};
+use commander_data::CommanderCoder;
 use wasmtime::component::*;
 
 #[async_trait]
 impl HostValueOutput for WasmStorage {
     async fn set(&mut self, resource: Resource<ValueOutput>, value: Vec<u8>) -> Result<(), Error> {
-        let data_type = &self
-            .outputs
-            .get(resource.rep())?
-            .metadata
-            .data_type;
+        let data_type = &self.outputs.get(resource.rep())?.metadata.data_type;
         self.outputs
-            .get_mut(resource.rep()).unwrap()
+            .get_mut(resource.rep())
+            .unwrap()
             .stream
             .try_get_value_mut()?
             .set(data_type.decode(&value)?)
@@ -48,13 +43,10 @@ impl HostValueOutput for WasmStorage {
 #[async_trait]
 impl HostListOutput for WasmStorage {
     async fn add(&mut self, resource: Resource<ListOutput>, value: Vec<u8>) -> Result<(), Error> {
-        let data_type = &self
-            .outputs
-            .get(resource.rep())?
-            .metadata
-            .data_type;
+        let data_type = &self.outputs.get(resource.rep())?.metadata.data_type;
         self.outputs
-            .get_mut(resource.rep()).unwrap()
+            .get_mut(resource.rep())
+            .unwrap()
             .stream
             .try_get_list_mut()?
             .add(data_type.decode(&value)?)
@@ -102,10 +94,7 @@ impl HostListOutput for WasmStorage {
             .stream
             .try_get_list()?
             .get_page_request_stream();
-        Ok(stream
-            .try_recv()
-            .map(ListOutputRequest::LoadMore)
-            .ok())
+        Ok(stream.try_recv().map(ListOutputRequest::LoadMore).ok())
     }
 
     async fn poll_request_blocking(
@@ -174,13 +163,12 @@ impl HostTreeOutput for WasmStorage {
         &mut self,
         resource: Resource<TreeOutput>,
     ) -> Result<Option<TreeOutputRequest>, Error> {
-        let mut stream = self
+        Ok(self
             .outputs
-            .get(resource.rep())?
+            .get_mut(resource.rep())?
             .stream
-            .try_get_tree()?
-            .get_request_children_stream();
-        Ok(stream
+            .try_get_tree_mut()?
+            .get_request_children_stream()
             .try_recv()
             .map(TreeOutputRequest::LoadChildren)
             .ok())
@@ -190,13 +178,14 @@ impl HostTreeOutput for WasmStorage {
         &mut self,
         resource: Resource<TreeOutput>,
     ) -> Result<TreeOutputRequest, Error> {
-        let mut stream = self
+        let parent_id = self
             .outputs
-            .get(resource.rep())?
+            .get_mut(resource.rep())?
             .stream
-            .try_get_tree()?
-            .get_request_children_stream();
-        let parent_id = stream.recv().await?;
+            .try_get_tree_mut()?
+            .get_request_children_stream()
+            .recv()
+            .await?;
         Ok(TreeOutputRequest::LoadChildren(parent_id))
     }
 

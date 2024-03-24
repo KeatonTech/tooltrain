@@ -28,17 +28,19 @@ pub struct TreeStream {
     edges: HashMap<Option<String>, Vec<String>>,
     updates: broadcast::Sender<TreeChange>,
     load_children_sender: broadcast::Sender<String>,
+    load_children_receiver: broadcast::Receiver<String>,
 }
 
 impl TreeStream {
     pub(crate) fn new() -> Self {
         let (updates, _) = broadcast::channel::<TreeChange>(128);
-        let (load_children_sender, _) = broadcast::channel::<String>(32);
+        let (load_children_sender, load_children_receiver) = broadcast::channel::<String>(32);
         TreeStream {
             nodes: HashMap::new(),
             edges: HashMap::new(),
             updates,
             load_children_sender,
+            load_children_receiver
         }
     }
 
@@ -135,7 +137,7 @@ impl TreeStream {
         self.updates.subscribe()
     }
 
-    pub(crate) fn get_request_children_stream(&self) -> broadcast::Receiver<String> {
-        self.load_children_sender.subscribe()
+    pub(crate) fn get_request_children_stream(&mut self) -> &mut broadcast::Receiver<String> {
+        &mut self.load_children_receiver
     }
 }

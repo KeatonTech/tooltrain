@@ -45,6 +45,7 @@ pub struct DataStreamMetadata {
 pub(crate) struct DataStreamResource {
     pub metadata: DataStreamMetadata,
     pub stream: DataStream,
+    
 }
 
 #[derive(Debug)]

@@ -3,6 +3,7 @@ use std::{
     fs,
     path::{Component, PathBuf},
     sync::Arc,
+    time::Duration,
 };
 
 use anyhow::{anyhow, Error};
@@ -16,7 +17,8 @@ use commander_rust_guest::{
     },
     export_guest, Guest, Schema,
 };
-use tokio::{runtime, sync::RwLock, task::JoinHandle};
+use parking_lot::RwLock;
+use tokio::{runtime, task::JoinHandle};
 use tokio_stream::StreamExt;
 
 struct FileExplorerProgram;
@@ -38,6 +40,7 @@ impl Guest for FileExplorerProgram {
 
     fn run(inputs: Vec<Input>) -> Result<String, String> {
         let runtime = runtime::Builder::new_current_thread()
+            .enable_time()
             .build()
             .map_err(|e| e.to_string())?;
         let result = runtime.block_on(run_internal(inputs));
@@ -57,12 +60,13 @@ async fn run_internal(inputs: Vec<Input>) -> Result<String, Error> {
     )));
 
     let mut running_job: Option<JoinHandle<()>> = None;
-    while let Some(Some(path_value)) = path_input.values(CommanderPathDataType {}).next().await {
+    let mut stream = path_input.values(CommanderPathDataType {});
+    while let Some(Some(path_value)) = stream.next().await {
         if let Some(job) = running_job {
             job.abort();
         }
 
-        tree_output.write().await.clear();
+        tree_output.write().clear();
 
         let cloned_tree_output = tree_output.clone();
         running_job = Some(tokio::spawn(async move {
@@ -86,14 +90,18 @@ impl FileExplorer {
     async fn run(&self) {
         self.add_paths(vec![]).await;
 
-        while let Some(tree_update) = self.output.write().await.next().await {
-            match tree_update {
-                TreeOutputRequest::LoadChildren(parent_id) => {
-                    let relative_path: Vec<&str> = parent_id.split('/').collect();
-                    self.add_paths(relative_path).await;
+        loop {
+            let maybe_request = self.output.read().poll_request();
+            if let Some(tree_update) = maybe_request {
+                match tree_update {
+                    TreeOutputRequest::LoadChildren(parent_id) => {
+                        let relative_path: Vec<&str> = parent_id.split('/').collect();
+                        self.add_paths(relative_path).await;
+                    }
+                    TreeOutputRequest::Close => break,
                 }
-                TreeOutputRequest::Close => break,
             }
+            tokio::time::sleep(Duration::from_millis(10)).await;
         }
     }
 
@@ -146,7 +154,6 @@ impl FileExplorer {
 
         self.output
             .write()
-            .await
             .add(parent_node_id.as_deref(), &children);
     }
 

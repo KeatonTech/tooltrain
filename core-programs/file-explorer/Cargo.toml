@@ -10,7 +10,8 @@ crate-type = ["cdylib"]
 anyhow = "1.0.80"
 commander-data = {path = "../../commander-data"}
 commander-rust-guest = {path = "../../commander-rust-guest"}
-tokio = { version = "1.36.0", features = ["parking_lot", "rt", "sync"] }
+parking_lot ={version =  "0.12.1", features = ["send_guard"]}
+tokio = { version = "1.36.0", features = ["parking_lot","rt", "sync"] }
 tokio-stream = { version = "0.1.14" }
 
 [package.metadata.component]
