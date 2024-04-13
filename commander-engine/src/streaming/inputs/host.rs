@@ -16,12 +16,15 @@ impl HostValueInput for WasmStorage {
     async fn get(&mut self, resource: Resource<ValueInput>) -> Result<Option<Vec<u8>>, Error> {
         let data_stream_resource = self.inputs.get(resource.rep())?;
         let data_type = &data_stream_resource.metadata.data_type;
-        data_stream_resource
-            .stream
-            .try_get_value()?
-            .snapshot()
-            .map(|commander_value| data_type.encode((*commander_value).clone()))
-            .transpose()
+        let result = {
+            let stream = data_stream_resource.stream.read();
+            stream
+                .try_get_value()?
+                .snapshot()
+                .map(|commander_value| data_type.encode((*commander_value).clone()))
+                .transpose()
+        };
+        return result;
     }
 
     async fn poll_change(
@@ -32,6 +35,7 @@ impl HostValueInput for WasmStorage {
         let data_type = &data_stream_resource.metadata.data_type;
         let value_change = data_stream_resource
             .stream
+            .read()
             .try_get_value()?
             .subscribe()
             .try_recv();
@@ -51,12 +55,14 @@ impl HostValueInput for WasmStorage {
     ) -> Result<Option<Vec<u8>>, Error> {
         let data_stream_resource = self.inputs.get(resource.rep())?;
         let data_type = &data_stream_resource.metadata.data_type;
-        let value_change = data_stream_resource
-            .stream
-            .try_get_value()?
-            .subscribe()
-            .recv()
-            .await;
+        let value_change = {
+            let mut receiver = data_stream_resource
+                .stream
+                .read()
+                .try_get_value()?
+                .subscribe();
+            receiver.recv().await
+        };
         match value_change {
             Ok(ValueChange::Set(commander_value)) => {
                 Ok(Some(data_type.encode((*commander_value).clone())?))
@@ -92,6 +98,7 @@ impl HostListInput for WasmStorage {
         };
         let value_list: Vec<CommanderValue> = data_stream_resource
             .stream
+            .read()
             .try_get_list()?
             .snapshot()
             .into_iter()
@@ -106,8 +113,9 @@ impl HostListInput for WasmStorage {
         limit: u32,
     ) -> Result<(), Error> {
         self.inputs
-            .get_mut(resource.rep())?
+            .get(resource.rep())?
             .stream
+            .write()
             .try_get_list_mut()?
             .request_page(limit)?;
         Ok(())
@@ -127,6 +135,7 @@ impl HostListInput for WasmStorage {
         };
         let list_change = data_stream_resource
             .stream
+            .read()
             .try_get_list()?
             .subscribe()
             .try_recv();
@@ -159,12 +168,12 @@ impl HostListInput for WasmStorage {
                 data_type.type_string()
             ));
         };
-        let list_change = data_stream_resource
+        let mut receiver = data_stream_resource
             .stream
+            .read()
             .try_get_list()?
-            .subscribe()
-            .recv()
-            .await;
+            .subscribe();
+        let list_change = receiver.recv().await;
         match list_change {
             Ok(ListChange::Add(commander_value)) => Ok(streaming_inputs::ListChange::Append(
                 data_type.encode((*commander_value).clone())?,
@@ -201,6 +210,7 @@ impl HostTreeInput for WasmStorage {
             .inputs
             .get(resource.rep())?
             .stream
+            .read()
             .try_get_tree()?
             .snapshot()
             .into_iter()
@@ -214,8 +224,9 @@ impl HostTreeInput for WasmStorage {
         of_parent: String,
     ) -> Result<(), Error> {
         self.inputs
-            .get_mut(resource.rep())?
+            .get(resource.rep())?
             .stream
+            .write()
             .try_get_tree_mut()?
             .request_children(of_parent)?;
         Ok(())
@@ -225,20 +236,20 @@ impl HostTreeInput for WasmStorage {
         &mut self,
         resource: Resource<TreeInput>,
     ) -> Result<Option<streaming_inputs::TreeChange>, Error> {
-        let data_stream_resource = self
-            .inputs
-            .get(resource.rep())?;
+        let data_stream_resource = self.inputs.get(resource.rep())?;
         let tree_change = data_stream_resource
             .stream
+            .read()
             .try_get_tree()?
             .subscribe()
             .try_recv();
         match tree_change {
-            Ok(TreeChange::Add { parent: _, children }) => {
-                Ok(Some(streaming_inputs::TreeChange::Append(
-                    children.into_iter().map(|c| (*c).clone()).collect(),
-                )))
-            }
+            Ok(TreeChange::Add {
+                parent: _,
+                children,
+            }) => Ok(Some(streaming_inputs::TreeChange::Append(
+                children.into_iter().map(|c| (*c).clone()).collect(),
+            ))),
             Ok(TreeChange::Remove(removed)) => {
                 Ok(Some(streaming_inputs::TreeChange::Remove(vec![removed
                     .id
@@ -255,17 +266,18 @@ impl HostTreeInput for WasmStorage {
         &mut self,
         resource: Resource<TreeInput>,
     ) -> Result<streaming_inputs::TreeChange, Error> {
-        let data_stream_resource = self
-            .inputs
-            .get(resource.rep())?;
-        let tree_change = data_stream_resource
+        let data_stream_resource = self.inputs.get(resource.rep())?;
+        let mut receiver = data_stream_resource
             .stream
+            .read()
             .try_get_tree()?
-            .subscribe()
-            .recv()
-            .await;
+            .subscribe();
+        let tree_change = receiver.recv().await;
         match tree_change {
-            Ok(TreeChange::Add { parent: _, children }) => Ok(streaming_inputs::TreeChange::Append(
+            Ok(TreeChange::Add {
+                parent: _,
+                children,
+            }) => Ok(streaming_inputs::TreeChange::Append(
                 children.into_iter().map(|c| (*c).clone()).collect(),
             )),
             Ok(TreeChange::Remove(removed)) => {

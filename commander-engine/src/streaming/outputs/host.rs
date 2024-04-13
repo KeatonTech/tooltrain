@@ -20,9 +20,10 @@ impl HostValueOutput for WasmStorage {
     async fn set(&mut self, resource: Resource<ValueOutput>, value: Vec<u8>) -> Result<(), Error> {
         let data_type = &self.outputs.get(resource.rep())?.metadata.data_type;
         self.outputs
-            .get_mut(resource.rep())
+            .get(resource.rep())
             .unwrap()
             .stream
+            .write()
             .try_get_value_mut()?
             .set(data_type.decode(&value)?)
     }
@@ -45,25 +46,28 @@ impl HostListOutput for WasmStorage {
     async fn add(&mut self, resource: Resource<ListOutput>, value: Vec<u8>) -> Result<(), Error> {
         let data_type = &self.outputs.get(resource.rep())?.metadata.data_type;
         self.outputs
-            .get_mut(resource.rep())
+            .get(resource.rep())
             .unwrap()
             .stream
+            .write()
             .try_get_list_mut()?
             .add(data_type.decode(&value)?)
     }
 
     async fn pop(&mut self, resource: Resource<ListOutput>) -> Result<(), Error> {
         self.outputs
-            .get_mut(resource.rep())?
+            .get(resource.rep())?
             .stream
+            .write()
             .try_get_list_mut()?
             .pop()
     }
 
     async fn clear(&mut self, resource: Resource<ListOutput>) -> Result<(), Error> {
         self.outputs
-            .get_mut(resource.rep())?
+            .get(resource.rep())?
             .stream
+            .write()
             .try_get_list_mut()?
             .clear()
     }
@@ -74,8 +78,9 @@ impl HostListOutput for WasmStorage {
         has_more_rows: bool,
     ) -> Result<(), Error> {
         self.outputs
-            .get_mut(resource.rep())?
+            .get(resource.rep())?
             .stream
+            .write()
             .try_get_list_mut()?
             .set_has_more_rows(has_more_rows)
     }
@@ -92,6 +97,7 @@ impl HostListOutput for WasmStorage {
             .outputs
             .get(resource.rep())?
             .stream
+            .read()
             .try_get_list()?
             .get_page_request_stream();
         Ok(stream.try_recv().map(ListOutputRequest::LoadMore).ok())
@@ -105,6 +111,7 @@ impl HostListOutput for WasmStorage {
             .outputs
             .get(resource.rep())?
             .stream
+            .read()
             .try_get_list()?
             .get_page_request_stream();
         let page_length = stream.recv().await?;
@@ -129,8 +136,9 @@ impl HostTreeOutput for WasmStorage {
         nodes: Vec<TreeNode>,
     ) -> Result<(), Error> {
         self.outputs
-            .get_mut(resource.rep())?
+            .get(resource.rep())?
             .stream
+            .write()
             .try_get_tree_mut()?
             .add(parent, nodes)
     }
@@ -141,16 +149,18 @@ impl HostTreeOutput for WasmStorage {
         parent: String,
     ) -> Result<(), Error> {
         self.outputs
-            .get_mut(resource.rep())?
+            .get(resource.rep())?
             .stream
+            .write()
             .try_get_tree_mut()?
             .remove(parent)
     }
 
     async fn clear(&mut self, resource: Resource<TreeOutput>) -> Result<(), Error> {
         self.outputs
-            .get_mut(resource.rep())?
+            .get(resource.rep())?
             .stream
+            .write()
             .try_get_tree_mut()?
             .clear()
     }
@@ -165,8 +175,9 @@ impl HostTreeOutput for WasmStorage {
     ) -> Result<Option<TreeOutputRequest>, Error> {
         Ok(self
             .outputs
-            .get_mut(resource.rep())?
+            .get(resource.rep())?
             .stream
+            .write()
             .try_get_tree_mut()?
             .get_request_children_stream()
             .try_recv()
@@ -178,14 +189,15 @@ impl HostTreeOutput for WasmStorage {
         &mut self,
         resource: Resource<TreeOutput>,
     ) -> Result<TreeOutputRequest, Error> {
-        let parent_id = self
+        let mut receiver = self
             .outputs
-            .get_mut(resource.rep())?
+            .get(resource.rep())?
             .stream
+            .write()
             .try_get_tree_mut()?
             .get_request_children_stream()
-            .recv()
-            .await?;
+            .resubscribe();
+        let parent_id = receiver.recv().await?;
         Ok(TreeOutputRequest::LoadChildren(parent_id))
     }
 

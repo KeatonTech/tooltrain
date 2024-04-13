@@ -44,8 +44,7 @@ pub struct DataStreamMetadata {
 #[derive(Debug)]
 pub(crate) struct DataStreamResource {
     pub metadata: DataStreamMetadata,
-    pub stream: DataStream,
-    
+    pub stream: Arc<RwLock<DataStream>>,
 }
 
 #[derive(Debug)]
@@ -96,7 +95,7 @@ impl DataStreamStorage {
             next_index,
             DataStreamResource {
                 metadata: metadata.clone(),
-                stream,
+                stream: Arc::new(RwLock::new(stream)),
             },
         );
         let _ = writer
@@ -108,7 +107,10 @@ impl DataStreamStorage {
     pub(crate) fn remove(&mut self, id: ResourceId) -> Result<bool, Error> {
         let mut writer = self.0.write();
         if let Some(output) = writer.state.remove(&id) {
-            output.stream.destroy()?;
+            let stream = output.stream;
+            if let Some(inner_stream) = Arc::into_inner(stream) {
+                inner_stream.into_inner().destroy()?;
+            }
             let _ = writer.changes.send(DataStreamResourceChange::Removed(id));
             Ok(true)
         } else {
@@ -121,14 +123,6 @@ impl DataStreamStorage {
         id: ResourceId,
     ) -> Result<MappedRwLockReadGuard<'_, DataStreamResource>, Error> {
         RwLockReadGuard::try_map(self.0.read(), |internal| internal.state.get(&id))
-            .map_err(|_| anyhow!("Output does not exist"))
-    }
-
-    pub(crate) fn get_mut(
-        &self,
-        id: ResourceId,
-    ) -> Result<MappedRwLockWriteGuard<'_, DataStreamResource>, Error> {
-        RwLockWriteGuard::try_map(self.0.write(), |internal| internal.state.get_mut(&id))
             .map_err(|_| anyhow!("Output does not exist"))
     }
 

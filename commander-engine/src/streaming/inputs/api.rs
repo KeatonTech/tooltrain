@@ -54,8 +54,9 @@ where
 {
     pub fn set(&self, value: ValueType::Value) -> Result<(), Error> {
         self.storage
-            .get_mut(self.id)?
+            .get(self.id)?
             .stream
+            .write()
             .try_get_value_mut()?
             .set(value.into())
     }

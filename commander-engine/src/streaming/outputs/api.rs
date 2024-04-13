@@ -1,18 +1,12 @@
-use std::{
-    collections::BTreeMap,
-    sync::Arc,
-};
+use std::{collections::BTreeMap, sync::Arc};
 
 use crate::{
-    datastream::{
-        DataStreamSnapshot, ListChange, TreeChange, TreeStreamNode,
-        ValueChange,
-    },
+    datastream::{DataStreamSnapshot, ListChange, TreeChange, TreeStreamNode, ValueChange},
     streaming::storage::{
         DataStreamMetadata, DataStreamResourceChange, DataStreamStorage, DataStreamType, ResourceId,
     },
 };
-use anyhow::{Error};
+use anyhow::Error;
 use commander_data::CommanderValue;
 use tokio::sync::broadcast::Receiver;
 use tokio_stream::{once, wrappers::BroadcastStream, Stream, StreamExt};
@@ -53,6 +47,7 @@ impl<'a> ValueOutputRef<'a> {
             .storage
             .get(self.id)?
             .stream
+            .read()
             .try_get_value()?
             .snapshot())
     }
@@ -62,6 +57,7 @@ impl<'a> ValueOutputRef<'a> {
             self.storage
                 .get(self.id)?
                 .stream
+                .read()
                 .try_get_value()?
                 .subscribe(),
         ))
@@ -98,7 +94,13 @@ impl<'a> ListOutputRef<'a> {
     }
 
     pub fn snapshot(&self) -> Result<Vec<Arc<CommanderValue>>, Error> {
-        Ok(self.storage.get(self.id)?.stream.try_get_list()?.snapshot())
+        Ok(self
+            .storage
+            .get(self.id)?
+            .stream
+            .read()
+            .try_get_list()?
+            .snapshot())
     }
 
     pub fn updates(&self) -> Result<impl Stream<Item = ListChange>, Error> {
@@ -106,6 +108,7 @@ impl<'a> ListOutputRef<'a> {
             self.storage
                 .get(self.id)?
                 .stream
+                .read()
                 .try_get_list()?
                 .subscribe(),
         ))
@@ -117,8 +120,9 @@ impl<'a> ListOutputRef<'a> {
 
     pub fn load_more(&self, limit: u32) -> Result<bool, Error> {
         self.storage
-            .get_mut(self.id)?
+            .get(self.id)?
             .stream
+            .write()
             .try_get_list_mut()?
             .request_page(limit)
     }
@@ -150,7 +154,13 @@ impl<'a> TreeOutputRef<'a> {
     }
 
     pub fn snapshot(&self) -> Result<Vec<TreeStreamNode>, Error> {
-        Ok(self.storage.get(self.id)?.stream.try_get_tree()?.snapshot())
+        Ok(self
+            .storage
+            .get(self.id)?
+            .stream
+            .read()
+            .try_get_tree()?
+            .snapshot())
     }
 
     pub fn updates(&self) -> Result<impl Stream<Item = TreeChange>, Error> {
@@ -158,6 +168,7 @@ impl<'a> TreeOutputRef<'a> {
             self.storage
                 .get(self.id)?
                 .stream
+                .read()
                 .try_get_tree()?
                 .subscribe(),
         ))
@@ -169,8 +180,9 @@ impl<'a> TreeOutputRef<'a> {
 
     pub fn request_children(&self, parent: String) -> Result<bool, Error> {
         self.storage
-            .get_mut(self.id)?
+            .get(self.id)?
             .stream
+            .write()
             .try_get_tree_mut()?
             .request_children(parent)
     }
@@ -237,7 +249,7 @@ impl<'a> Outputs<'a> {
         self.0
             .state()
             .iter()
-            .map(|(id, spec)| (*id, spec.stream.snapshot()))
+            .map(|(id, spec)| (*id, spec.stream.read().snapshot()))
             .collect()
     }
 }
