@@ -1,13 +1,14 @@
 use std::{collections::BTreeMap, sync::Arc};
 
 use crate::{
-    datastream::{DataStreamSnapshot, ListChange, TreeChange, TreeStreamNode, ValueChange},
+    datastream::{DataStream, DataStreamSnapshot, ListChange, TreeChange, TreeStreamNode, ValueChange},
     streaming::storage::{
         DataStreamMetadata, DataStreamResourceChange, DataStreamStorage, DataStreamType, ResourceId,
     },
 };
 use anyhow::Error;
 use commander_data::CommanderValue;
+use parking_lot::RwLock;
 use tokio::sync::broadcast::Receiver;
 use tokio_stream::{once, wrappers::BroadcastStream, Stream, StreamExt};
 
@@ -42,7 +43,7 @@ impl<'a> ValueOutputRef<'a> {
         self.storage.get(self.id).unwrap().metadata.clone()
     }
 
-    pub fn snapshot(&self) -> Result<Option<Arc<CommanderValue>>, Error> {
+    pub fn value(&self) -> Result<Option<Arc<CommanderValue>>, Error> {
         Ok(self
             .storage
             .get(self.id)?
@@ -52,7 +53,7 @@ impl<'a> ValueOutputRef<'a> {
             .snapshot())
     }
 
-    pub fn updates(&self) -> Result<impl Stream<Item = ValueChange>, Error> {
+    pub fn updates_stream(&self) -> Result<impl Stream<Item = ValueChange>, Error> {
         Ok(make_broadcast_stream(
             self.storage
                 .get(self.id)?
@@ -63,8 +64,12 @@ impl<'a> ValueOutputRef<'a> {
         ))
     }
 
-    pub fn values(&self) -> Result<impl Stream<Item = Option<Arc<CommanderValue>>> + '_, Error> {
-        Ok(once(self.snapshot()?).chain(self.updates()?.map_while(|_| self.snapshot().ok())))
+    pub fn value_stream(&self) -> Result<impl Stream<Item = Option<Arc<CommanderValue>>> + '_, Error> {
+        Ok(once(self.value()?).chain(self.updates_stream()?.map_while(|_| self.value().ok())))
+    }
+
+    pub(crate) fn inner_data_stream(&self) -> Result<Arc<RwLock<DataStream>>, Error> {
+        Ok(self.storage.get(self.id)?.stream.clone())
     }
 }
 
@@ -93,7 +98,7 @@ impl<'a> ListOutputRef<'a> {
         self.storage.get(self.id).unwrap().metadata.clone()
     }
 
-    pub fn snapshot(&self) -> Result<Vec<Arc<CommanderValue>>, Error> {
+    pub fn value(&self) -> Result<Vec<Arc<CommanderValue>>, Error> {
         Ok(self
             .storage
             .get(self.id)?
@@ -103,7 +108,7 @@ impl<'a> ListOutputRef<'a> {
             .snapshot())
     }
 
-    pub fn updates(&self) -> Result<impl Stream<Item = ListChange>, Error> {
+    pub fn updates_stream(&self) -> Result<impl Stream<Item = ListChange>, Error> {
         Ok(make_broadcast_stream(
             self.storage
                 .get(self.id)?
@@ -114,8 +119,8 @@ impl<'a> ListOutputRef<'a> {
         ))
     }
 
-    pub fn values(&self) -> Result<impl Stream<Item = Vec<Arc<CommanderValue>>> + '_, Error> {
-        Ok(once(self.snapshot()?).chain(self.updates()?.map_while(|_| self.snapshot().ok())))
+    pub fn values_stream(&self) -> Result<impl Stream<Item = Vec<Arc<CommanderValue>>> + '_, Error> {
+        Ok(once(self.value()?).chain(self.updates_stream()?.map_while(|_| self.value().ok())))
     }
 
     pub fn load_more(&self, limit: u32) -> Result<bool, Error> {
@@ -125,6 +130,10 @@ impl<'a> ListOutputRef<'a> {
             .write()
             .try_get_list_mut()?
             .request_page(limit)
+    }
+
+    pub(crate) fn inner_data_stream(&self) -> Result<Arc<RwLock<DataStream>>, Error> {
+        Ok(self.storage.get(self.id)?.stream.clone())
     }
 }
 
@@ -153,7 +162,7 @@ impl<'a> TreeOutputRef<'a> {
         self.storage.get(self.id).unwrap().metadata.clone()
     }
 
-    pub fn snapshot(&self) -> Result<Vec<TreeStreamNode>, Error> {
+    pub fn value(&self) -> Result<Vec<TreeStreamNode>, Error> {
         Ok(self
             .storage
             .get(self.id)?
@@ -163,7 +172,7 @@ impl<'a> TreeOutputRef<'a> {
             .snapshot())
     }
 
-    pub fn updates(&self) -> Result<impl Stream<Item = TreeChange>, Error> {
+    pub fn updates_stream(&self) -> Result<impl Stream<Item = TreeChange>, Error> {
         Ok(make_broadcast_stream(
             self.storage
                 .get(self.id)?
@@ -174,8 +183,8 @@ impl<'a> TreeOutputRef<'a> {
         ))
     }
 
-    pub fn values(&self) -> Result<impl Stream<Item = Vec<TreeStreamNode>> + '_, Error> {
-        Ok(once(self.snapshot()?).chain(self.updates()?.map_while(|_| self.snapshot().ok())))
+    pub fn value_stream(&self) -> Result<impl Stream<Item = Vec<TreeStreamNode>> + '_, Error> {
+        Ok(once(self.value()?).chain(self.updates_stream()?.map_while(|_| self.value().ok())))
     }
 
     pub fn request_children(&self, parent: String) -> Result<bool, Error> {
@@ -185,6 +194,10 @@ impl<'a> TreeOutputRef<'a> {
             .write()
             .try_get_tree_mut()?
             .request_children(parent)
+    }
+
+    pub(crate) fn inner_data_stream(&self) -> Result<Arc<RwLock<DataStream>>, Error> {
+        Ok(self.storage.get(self.id)?.stream.clone())
     }
 }
 
@@ -225,19 +238,20 @@ impl<'a> Outputs<'a> {
     pub fn updates(&self) -> impl Stream<Item = OutputChange> + '_ {
         BroadcastStream::from(self.0.changes())
             .map_while(|result| result.ok())
-            .map(|internal_change| match internal_change {
+            .filter_map(|internal_change| match internal_change {
                 DataStreamResourceChange::Added(metadata) => {
-                    OutputChange::Added(OutputHandle::from_metadata(metadata))
+                    Some(OutputChange::Added(OutputHandle::from_metadata(metadata)))
                 }
-                DataStreamResourceChange::Removed(id) => OutputChange::Removed(id),
+                DataStreamResourceChange::Removed(id) => Some(OutputChange::Removed(id)),
+                DataStreamResourceChange::DataStreamChanged(_) => None,
             })
     }
 
-    pub fn values(&self) -> impl Stream<Item = Vec<OutputHandle>> + '_ {
-        once(self.snapshot_metadata()).chain(self.updates().map(|_| self.snapshot_metadata()))
+    pub fn handles_stream(&self) -> impl Stream<Item = Vec<OutputHandle>> + '_ {
+        once(self.handles()).chain(self.updates().map(|_| self.handles()))
     }
 
-    pub fn snapshot_metadata(&self) -> Vec<OutputHandle> {
+    pub fn handles(&self) -> Vec<OutputHandle> {
         self.0
             .state()
             .values()
@@ -245,7 +259,7 @@ impl<'a> Outputs<'a> {
             .collect()
     }
 
-    pub fn snapshot_output_values(&self) -> BTreeMap<ResourceId, DataStreamSnapshot> {
+    pub fn values(&self) -> BTreeMap<ResourceId, DataStreamSnapshot> {
         self.0
             .state()
             .iter()

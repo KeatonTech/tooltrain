@@ -44,7 +44,7 @@ async fn main() -> Result<(), Error> {
 
     let result = run.get_result().await;
     println!("Final result: {:?}", result);
-    println!("Outputs: {:?}", run.outputs().snapshot_output_values());
+    println!("Outputs: {:?}", run.outputs().values());
     Ok(())
 }
 
@@ -65,7 +65,7 @@ async fn get_tree_output(outputs: &Outputs<'_>) -> Result<TreeOutputHandle, Erro
 
 async fn listen_for_tree_changes(tree_output_handle: TreeOutputHandle, run: CommanderStreamingProgramRun) {
     let binding = tree_output_handle.load(run.outputs());
-    let mut stream = binding.values().unwrap();
+    let mut stream = binding.value_stream().unwrap();
     while let Some(tree_change) = stream.next().await {
         println!("Received tree change: {:?}", tree_change);
     }

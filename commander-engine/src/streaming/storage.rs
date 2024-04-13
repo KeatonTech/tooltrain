@@ -23,6 +23,7 @@ pub type ResourceId = u32;
 pub enum DataStreamResourceChange {
     Added(DataStreamMetadata),
     Removed(ResourceId),
+    DataStreamChanged(ResourceId),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -124,6 +125,13 @@ impl DataStreamStorage {
     ) -> Result<MappedRwLockReadGuard<'_, DataStreamResource>, Error> {
         RwLockReadGuard::try_map(self.0.read(), |internal| internal.state.get(&id))
             .map_err(|_| anyhow!("Output does not exist"))
+    }
+
+    pub(crate) fn change_data_stream(&self, id: ResourceId, new_stream: Arc<RwLock<DataStream>>) -> Result<(), Error> {
+        let mut writer = self.0.write();
+        writer.state.get_mut(&id).ok_or_else(|| anyhow!("Stream does not exist"))?.stream = new_stream;
+        writer.changes.send(DataStreamResourceChange::DataStreamChanged(id))?;
+        Ok(())
     }
 
     pub(crate) fn changes(&self) -> Receiver<DataStreamResourceChange> {
