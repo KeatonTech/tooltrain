@@ -1,7 +1,11 @@
+use std::sync::Arc;
+
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use commander_data::{CommanderCoder, CommanderDataType, CommanderValue};
 use tokio::sync::broadcast::error::TryRecvError;
+use tokio_stream::wrappers::BroadcastStream;
+use tokio_stream::StreamExt;
 use wasmtime::component::Resource;
 
 use crate::bindings::streaming::{ListInput, TreeInput};
@@ -9,6 +13,7 @@ use crate::bindings::streaming_inputs::{
     self, HostListInput, HostTreeInput, HostValueInput, TreeNode, ValueInput,
 };
 use crate::datastream::{ListChange, TreeChange, ValueChange};
+use crate::streaming::storage::DataStreamResourceChange;
 use crate::streaming::WasmStorage;
 
 #[async_trait]
@@ -53,22 +58,50 @@ impl HostValueInput for WasmStorage {
         &mut self,
         resource: Resource<ValueInput>,
     ) -> Result<Option<Vec<u8>>, Error> {
-        let data_stream_resource = self.inputs.get(resource.rep())?;
-        let data_type = &data_stream_resource.metadata.data_type;
-        let value_change = {
-            let mut receiver = data_stream_resource
+        let (mut data_stream_change_stream, mut value_stream) = {
+            let data_stream_resource = self.inputs.get(resource.rep())?;
+
+            let data_stream_change_stream = BroadcastStream::new(self.inputs.changes())
+                .map_while(|result| result.ok())
+                .filter(|change| change.is_data_stream_changed())
+                .filter(|change| {
+                    let DataStreamResourceChange::DataStreamChanged(changed_resource_id) = change
+                    else {
+                        return false;
+                    };
+                    *changed_resource_id == resource.rep()
+                });
+
+            let value_stream = data_stream_resource
                 .stream
                 .read()
                 .try_get_value()?
                 .subscribe();
-            receiver.recv().await
+            (data_stream_change_stream, value_stream)
         };
-        match value_change {
-            Ok(ValueChange::Set(commander_value)) => {
-                Ok(Some(data_type.encode((*commander_value).clone())?))
+
+        tokio::select! {
+            // Return the newest value from the current data stream
+            value_change = value_stream.recv() => {
+                let data_stream_resource = self.inputs.get(resource.rep())?;
+                let data_type = &data_stream_resource.metadata.data_type;
+
+                match value_change {
+                    Ok(ValueChange::Set(commander_value)) => {
+                        Ok(Some(data_type.encode((*commander_value).clone())?))
+                    }
+                    Ok(ValueChange::Destroy) => Err(anyhow!("Input was destroyed")),
+                    Err(e) => Err(anyhow!("RecvError when reading from ValueStream. {:?}", e)),
+                }
             }
-            Ok(ValueChange::Destroy) => Err(anyhow!("Input was destroyed")),
-            Err(e) => Err(anyhow!("RecvError when reading from ValueStream. {:?}", e)),
+
+            // OR, return the first value from the new data stream
+            _ = data_stream_change_stream.next() => {
+                let data_stream_resource = self.inputs.get(resource.rep())?;
+                let data_type = &data_stream_resource.metadata.data_type;
+                let snapshot: Option<Arc<CommanderValue>> = data_stream_resource.stream.read().snapshot().try_into().map_err(|_| anyhow!("Invalid DataStream type"))?;
+                snapshot.map(|commander_value| data_type.encode((*commander_value).clone())).transpose()
+            }
         }
     }
 

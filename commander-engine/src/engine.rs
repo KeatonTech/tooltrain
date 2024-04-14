@@ -15,7 +15,7 @@ use crate::{
         inputs,
         streaming::{Input, StreamingPlugin},
     },
-    streaming::{DataStreamStorage, InputHandle, Inputs, Outputs, ValueInputHandle, WasmStorage},
+    streaming::{DataStreamStorage, InputHandle, Inputs, OutputRef, Outputs, ValueInputHandle, WasmStorage},
 };
 
 struct CommanderEngineInternal {
@@ -121,6 +121,24 @@ impl StreamingRunBuilder {
             store,
             inputs: vec![],
         })
+    }
+
+    pub fn bind_input<ValueType, O: OutputRef>(
+        &mut self,
+        name: String,
+        description: String,
+        data_type: ValueType,
+        to_output: O 
+    ) -> Result<InputHandle, Error>
+    where
+        ValueType: CommanderCoder,
+        ValueType: Into<CommanderDataType>,
+        ValueType::Value: Into<CommanderValue>,
+    {
+        let inputs = Inputs(&self.store.data().inputs);
+        let input_handle = inputs.bind_input(name, description, data_type, to_output)?;
+        self.inputs.push(input_handle.as_input_binding());
+        Ok(input_handle)
     }
 
     pub fn add_value_input<ValueType>(

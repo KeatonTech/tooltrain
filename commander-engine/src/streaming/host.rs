@@ -1,9 +1,11 @@
+use std::sync::Arc;
+
 use crate::{
     bindings::streaming::{
         ListInput, ListOutput, StreamingPluginImports, TreeInput, TreeOutput, ValueInput,
         ValueOutput,
     },
-    datastream::{DataStream, ListStream, ValueStream, TreeStream},
+    datastream::{DataStream, ListStream, TreeStream, ValueStream},
     streaming::storage::WasmStorage,
 };
 
@@ -11,6 +13,7 @@ use anyhow::Error;
 use async_trait::async_trait;
 
 use commander_data::{parse, CommanderCoder};
+use parking_lot::RwLock;
 use wasmtime::component::*;
 
 #[async_trait]
@@ -33,7 +36,9 @@ impl StreamingPluginImports for WasmStorage {
             name,
             description,
             commander_data_type,
-            DataStream::Value(ValueStream::new(decoded_initial_value)),
+            Arc::new(RwLock::new(DataStream::Value(ValueStream::new(
+                decoded_initial_value,
+            )))),
         )?))
     }
 
@@ -47,7 +52,7 @@ impl StreamingPluginImports for WasmStorage {
             name,
             description,
             parse(&data_type)?,
-            DataStream::List(ListStream::new()),
+            Arc::new(RwLock::new(DataStream::List(ListStream::new()))),
         )?))
     }
 
@@ -61,7 +66,7 @@ impl StreamingPluginImports for WasmStorage {
             name,
             description,
             parse(&data_type)?,
-            DataStream::Tree(TreeStream::new()),
+            Arc::new(RwLock::new(DataStream::Tree(TreeStream::new()))),
         )?))
     }
 
@@ -83,7 +88,9 @@ impl StreamingPluginImports for WasmStorage {
             name,
             description,
             commander_data_type,
-            DataStream::Value(ValueStream::new(decoded_initial_value)),
+            Arc::new(RwLock::new(DataStream::Value(ValueStream::new(
+                decoded_initial_value,
+            )))),
         )?))
     }
 
@@ -97,7 +104,7 @@ impl StreamingPluginImports for WasmStorage {
             name,
             description,
             parse(&data_type)?,
-            DataStream::List(ListStream::new()),
+            Arc::new(RwLock::new(DataStream::List(ListStream::new()))),
         )?))
     }
 
@@ -111,7 +118,7 @@ impl StreamingPluginImports for WasmStorage {
             name,
             description,
             parse(&data_type)?,
-            DataStream::Tree(TreeStream::new()),
+            Arc::new(RwLock::new(DataStream::Tree(TreeStream::new()))),
         )?))
     }
 }

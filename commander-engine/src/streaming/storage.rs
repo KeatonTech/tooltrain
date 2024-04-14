@@ -73,7 +73,7 @@ impl DataStreamStorage {
         name: String,
         description: String,
         data_type: CommanderDataType,
-        stream: DataStream,
+        stream: Arc<RwLock<DataStream>>,
     ) -> Result<ResourceId, Error> {
         let mut writer = self.0.write();
         let next_index = writer
@@ -86,7 +86,7 @@ impl DataStreamStorage {
             name,
             description,
             data_type,
-            data_stream_type: match stream {
+            data_stream_type: match *stream.read() {
                 DataStream::Value(_) => DataStreamType::Value,
                 DataStream::List(_) => DataStreamType::List,
                 DataStream::Tree(_) => DataStreamType::Tree,
@@ -96,7 +96,7 @@ impl DataStreamStorage {
             next_index,
             DataStreamResource {
                 metadata: metadata.clone(),
-                stream: Arc::new(RwLock::new(stream)),
+                stream
             },
         );
         let _ = writer

@@ -18,6 +18,10 @@ fn make_broadcast_stream<T: Clone + Send + 'static>(
     BroadcastStream::new(broadcast_receiver).map_while(Result::ok)
 }
 
+pub trait OutputRef {
+    fn inner_data_stream(&self) -> Result<Arc<RwLock<DataStream>>, Error>; 
+}
+
 #[derive(Clone, Debug)]
 pub struct ValueOutputHandle {
     pub metadata: DataStreamMetadata,
@@ -67,8 +71,10 @@ impl<'a> ValueOutputRef<'a> {
     pub fn value_stream(&self) -> Result<impl Stream<Item = Option<Arc<CommanderValue>>> + '_, Error> {
         Ok(once(self.value()?).chain(self.updates_stream()?.map_while(|_| self.value().ok())))
     }
+}
 
-    pub(crate) fn inner_data_stream(&self) -> Result<Arc<RwLock<DataStream>>, Error> {
+impl OutputRef for ValueOutputRef<'_> {
+    fn inner_data_stream(&self) -> Result<Arc<RwLock<DataStream>>, Error> {
         Ok(self.storage.get(self.id)?.stream.clone())
     }
 }
@@ -131,8 +137,10 @@ impl<'a> ListOutputRef<'a> {
             .try_get_list_mut()?
             .request_page(limit)
     }
+}
 
-    pub(crate) fn inner_data_stream(&self) -> Result<Arc<RwLock<DataStream>>, Error> {
+impl OutputRef for ListOutputRef<'_> {
+    fn inner_data_stream(&self) -> Result<Arc<RwLock<DataStream>>, Error> {
         Ok(self.storage.get(self.id)?.stream.clone())
     }
 }
@@ -195,8 +203,10 @@ impl<'a> TreeOutputRef<'a> {
             .try_get_tree_mut()?
             .request_children(parent)
     }
+}
 
-    pub(crate) fn inner_data_stream(&self) -> Result<Arc<RwLock<DataStream>>, Error> {
+impl OutputRef for TreeOutputRef<'_> {
+    fn inner_data_stream(&self) -> Result<Arc<RwLock<DataStream>>, Error> {
         Ok(self.storage.get(self.id)?.stream.clone())
     }
 }

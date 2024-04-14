@@ -1,15 +1,15 @@
-use std::{collections::BTreeMap, marker::PhantomData};
+use std::{collections::BTreeMap, marker::PhantomData, sync::Arc};
 
 use commander_data::{CommanderCoder, CommanderDataType, CommanderValue};
+use parking_lot::RwLock;
 use tokio_stream::{once, wrappers::BroadcastStream, Stream, StreamExt};
 use wasmtime::component::Resource;
 
 use crate::{
-    bindings::{self, streaming_inputs::Input},
+    bindings,
     datastream::{DataStream, DataStreamSnapshot, ValueStream},
     streaming::{
-        storage::{DataStreamMetadata, DataStreamResourceChange, DataStreamType, ResourceId},
-        DataStreamStorage, ValueOutputRef,
+        storage::{DataStreamMetadata, DataStreamResourceChange, DataStreamType, ResourceId}, DataStreamStorage, OutputRef, ValueOutputRef
     },
 };
 use anyhow::Error;
@@ -35,10 +35,13 @@ impl<ValueType: CommanderCoder> ValueInputHandle<ValueType> {
         }
     }
 
-    pub fn downcast<T: CommanderCoder> (&self) -> ValueInputHandle<T> where T: Into<ValueType> {
+    pub fn downcast<T: CommanderCoder>(&self) -> ValueInputHandle<T>
+    where
+        T: Into<ValueType>,
+    {
         ValueInputHandle {
             metadata: self.metadata.clone(),
-            value_type: PhantomData
+            value_type: PhantomData,
         }
     }
 }
@@ -63,7 +66,7 @@ where
             .set(value.into())
     }
 
-    pub fn pipe(&self, from: ValueOutputRef<'_>) -> Result<(), Error> {
+    pub fn bind(&self, from: ValueOutputRef<'_>) -> Result<(), Error> {
         self.storage
             .change_data_stream(self.id, from.inner_data_stream()?)
     }
@@ -82,6 +85,12 @@ impl InputHandle {
                 value_type: PhantomData,
             }),
             _ => unimplemented!(),
+        }
+    }
+
+    pub(crate) fn as_input_binding(&self) -> bindings::streaming_inputs::Input {
+        match self {
+            InputHandle::Value(handle) => handle.as_input_binding(),
         }
     }
 }
@@ -143,11 +152,34 @@ impl<'a> Inputs<'a> {
             name,
             description,
             data_type.into(),
-            DataStream::Value(ValueStream::new(initial_value.map(|v| v.into()))),
+            Arc::new(RwLock::new(DataStream::Value(ValueStream::new(
+                initial_value.map(|v| v.into()),
+            )))),
         )?;
         Ok(ValueInputHandle {
             metadata: self.0.get(resource_id).unwrap().metadata.clone(),
             value_type: PhantomData,
         })
+    }
+
+    pub fn bind_input<ValueType, O: OutputRef>(
+        &self,
+        name: String,
+        description: String,
+        data_type: ValueType,
+        from: O,
+    ) -> Result<InputHandle, Error>
+    where
+        ValueType: CommanderCoder,
+        ValueType: Into<CommanderDataType>,
+        ValueType::Value: Into<CommanderValue>,
+    {
+        let resource_id = self.0.add(
+            name,
+            description,
+            data_type.into(),
+            from.inner_data_stream()?.clone(),
+        )?;
+        Ok(InputHandle::from_metadata(self.0.get(resource_id).unwrap().metadata.clone()))
     }
 }
