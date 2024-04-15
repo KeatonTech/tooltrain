@@ -10,7 +10,7 @@ use cap_std::fs::Dir;
 use commander_data::CommanderDataType;
 use derive_more::{IsVariant, TryInto, Unwrap};
 use parking_lot::{
-    MappedRwLockReadGuard, MappedRwLockWriteGuard, RwLock, RwLockReadGuard, RwLockWriteGuard,
+    MappedRwLockReadGuard, RwLock, RwLockReadGuard,
 };
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 use wasmtime_wasi_http::{WasiHttpCtx, WasiHttpView};
