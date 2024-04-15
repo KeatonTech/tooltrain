@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use std::{collections::BTreeMap};
+use std::collections::BTreeMap;
 
 use crate::datastream::DataStream;
 use crate::streaming::inputs::storage::InputStreams;
