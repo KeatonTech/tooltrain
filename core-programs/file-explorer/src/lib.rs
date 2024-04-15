@@ -3,7 +3,6 @@ use std::{
     fs,
     path::{Component, PathBuf},
     sync::Arc,
-    time::Duration,
 };
 
 use anyhow::{anyhow, Error};
@@ -89,19 +88,11 @@ struct FileExplorer {
 impl FileExplorer {
     async fn run(&self) {
         self.add_paths(vec![]).await;
+        let stream = self.output.read().get_request_stream();
 
-        loop {
-            let maybe_request = self.output.read().poll_request();
-            if let Some(tree_update) = maybe_request {
-                match tree_update {
-                    TreeOutputRequest::LoadChildren(parent_id) => {
-                        let relative_path: Vec<&str> = parent_id.split('/').collect();
-                        self.add_paths(relative_path).await;
-                    }
-                    TreeOutputRequest::Close => break,
-                }
-            }
-            tokio::time::sleep(Duration::from_millis(10)).await;
+        while let TreeOutputRequest::LoadChildren(parent_id) = stream.poll_request_blocking() {
+            let relative_path: Vec<&str> = parent_id.split('/').collect();
+            self.add_paths(relative_path).await;
         }
     }
 

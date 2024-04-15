@@ -41,6 +41,11 @@ interface streaming-outputs {
         close,
         load-more(/* limit= */u32),
     }
+    
+    resource list-output-request-stream {
+        poll-request: func() -> option<list-output-request>;
+        poll-request-blocking: func() -> list-output-request;
+    }
 
     resource list-output {
         add: func(event: list<u8>); // Encoded Flexbuffer containing a value
@@ -48,9 +53,7 @@ interface streaming-outputs {
         clear: func();
         set-has-more-rows: func(has-more-rows: bool);
         destroy: func();
-
-        poll-request: func() -> option<list-output-request>;
-        poll-request-blocking: func() -> list-output-request;
+        get-request-stream: func() -> list-output-request-stream;
     }
 
     variant tree-output-request {
@@ -58,42 +61,51 @@ interface streaming-outputs {
         load-children(/* parent= */string),
     }
 
+    resource tree-output-request-stream {
+        poll-request: func() -> option<tree-output-request>;
+        poll-request-blocking: func() -> tree-output-request;
+    }
+
     resource tree-output {
         add: func(parent: option<string>, children: list<tree-node>);
         remove: func(id: string);
         clear: func();
         destroy: func();
-
-        poll-request: func() -> option<tree-output-request>;
-        poll-request-blocking: func() -> tree-output-request;
+        get-request-stream: func() -> tree-output-request-stream;
     }
 }
 
 interface streaming-inputs {
     use inputs.{tree-node};
     
-    resource value-input {
-        get: func() -> option<list<u8>>; // Encoded Flexbuffer containing a value
-        destroy: func();
-
+    resource value-change-stream {
         poll-change: func() -> option<option<list<u8>>>;
         poll-change-blocking: func() -> option<list<u8>>;
     }
 
+    resource value-input {
+        get: func() -> option<list<u8>>; // Encoded Flexbuffer containing a value
+        destroy: func();
+        get-change-stream: func() -> value-change-stream;
+    }
+
     variant list-change {
-        replace(list<u8>),
+        replace(list<list<u8>>),
         append(list<u8>),
         pop,
         has-more-pages(bool)
+    }
+
+    resource list-change-stream {
+        poll-change: func() -> option<list-change>;
+        poll-change-blocking: func() -> list-change;
     }
 
     resource list-input {
         get: func() -> list<u8>; // Encoded Flexbuffer containing a List
         request-more: func(limit: u32);
         destroy: func();
-
-        poll-change: func() -> option<list-change>;
-        poll-change-blocking: func() -> list-change;
+        get-change-stream: func() -> list-change-stream;
     }
 
     variant tree-change {
@@ -102,13 +114,16 @@ interface streaming-inputs {
         remove(list<string>)
     }
 
+    resource tree-change-stream {
+        poll-change: func() -> option<tree-change>;
+        poll-change-blocking: func() -> tree-change;
+    }
+
     resource tree-input {
         get: func() -> list<tree-node>; // Encoded Flexbuffer containing all nodes
         request-children: func(of: string);
         destroy: func();
-
-        poll-change: func() -> option<tree-change>;
-        poll-change-blocking: func() -> tree-change;
+        get-change-stream: func() -> tree-change-stream;
     }
 
     variant input {

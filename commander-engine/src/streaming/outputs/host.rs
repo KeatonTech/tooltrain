@@ -3,7 +3,9 @@ use crate::{
         inputs::TreeNode,
         streaming::{ListOutput, TreeOutput, ValueOutput},
         streaming_outputs::{
-            HostListOutput, HostTreeOutput, HostValueOutput, ListOutputRequest, TreeOutputRequest,
+            HostListOutput, HostListOutputRequestStream, HostTreeOutput,
+            HostTreeOutputRequestStream, HostValueOutput, ListOutputRequest,
+            ListOutputRequestStream, TreeOutputRequest, TreeOutputRequestStream,
         },
     },
     streaming::storage::WasmStorage,
@@ -13,6 +15,7 @@ use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 
 use commander_data::CommanderCoder;
+use tokio_stream::{wrappers::BroadcastStream, StreamExt};
 use wasmtime::component::*;
 
 #[async_trait]
@@ -89,33 +92,26 @@ impl HostListOutput for WasmStorage {
         HostListOutput::drop(self, resource)
     }
 
-    async fn poll_request(
+    async fn get_request_stream(
         &mut self,
         resource: Resource<ListOutput>,
-    ) -> Result<Option<ListOutputRequest>, Error> {
-        let mut stream = self
-            .outputs
-            .get(resource.rep())?
-            .stream
-            .read()
-            .try_get_list()?
-            .get_page_request_stream();
-        Ok(stream.try_recv().map(ListOutputRequest::LoadMore).ok())
-    }
-
-    async fn poll_request_blocking(
-        &mut self,
-        resource: Resource<ListOutput>,
-    ) -> Result<ListOutputRequest, Error> {
-        let mut stream = self
-            .outputs
-            .get(resource.rep())?
-            .stream
-            .read()
-            .try_get_list()?
-            .get_page_request_stream();
-        let page_length = stream.recv().await?;
-        Ok(ListOutputRequest::LoadMore(page_length))
+    ) -> Result<Resource<ListOutputRequestStream>, Error> {
+        Ok(Resource::new_own(
+            self.output_request_streams.list_request_streams.add_stream(
+                BroadcastStream::new(
+                    self.outputs
+                        .get(resource.rep())?
+                        .stream
+                        .read()
+                        .try_get_list()?
+                        .get_page_request_stream(),
+                )
+                .map(|request_result| match request_result {
+                    Ok(count) => ListOutputRequest::LoadMore(count),
+                    Err(_) => ListOutputRequest::Close,
+                }),
+            ),
+        ))
     }
 
     fn drop(&mut self, resource: Resource<ListOutput>) -> Result<(), Error> {
@@ -169,36 +165,26 @@ impl HostTreeOutput for WasmStorage {
         HostTreeOutput::drop(self, resource)
     }
 
-    async fn poll_request(
+    async fn get_request_stream(
         &mut self,
         resource: Resource<TreeOutput>,
-    ) -> Result<Option<TreeOutputRequest>, Error> {
-        Ok(self
-            .outputs
-            .get(resource.rep())?
-            .stream
-            .write()
-            .try_get_tree_mut()?
-            .get_request_children_stream()
-            .try_recv()
-            .map(TreeOutputRequest::LoadChildren)
-            .ok())
-    }
-
-    async fn poll_request_blocking(
-        &mut self,
-        resource: Resource<TreeOutput>,
-    ) -> Result<TreeOutputRequest, Error> {
-        let mut receiver = self
-            .outputs
-            .get(resource.rep())?
-            .stream
-            .write()
-            .try_get_tree_mut()?
-            .get_request_children_stream()
-            .resubscribe();
-        let parent_id = receiver.recv().await?;
-        Ok(TreeOutputRequest::LoadChildren(parent_id))
+    ) -> Result<Resource<TreeOutputRequestStream>, Error> {
+        Ok(Resource::new_own(
+            self.output_request_streams.tree_request_streams.add_stream(
+                BroadcastStream::new(
+                    self.outputs
+                        .get(resource.rep())?
+                        .stream
+                        .write()
+                        .try_get_tree_mut()?
+                        .get_request_children_stream(),
+                )
+                .map(|request_result| match request_result {
+                    Ok(parent) => TreeOutputRequest::LoadChildren(parent),
+                    Err(_) => TreeOutputRequest::Close,
+                }),
+            ),
+        ))
     }
 
     fn drop(&mut self, resource: Resource<TreeOutput>) -> Result<(), Error> {
@@ -206,6 +192,86 @@ impl HostTreeOutput for WasmStorage {
             Ok(())
         } else {
             Err(anyhow!("Could not destroy non-existent output"))
+        }
+    }
+}
+
+#[async_trait]
+impl HostListOutputRequestStream for WasmStorage {
+    async fn poll_request(
+        &mut self,
+        resource: Resource<ListOutputRequestStream>,
+    ) -> Result<Option<ListOutputRequest>, Error> {
+        self.output_request_streams
+            .list_request_streams
+            .get_mut(resource.rep())
+            .ok_or_else(|| anyhow!("Output request stream not found"))?
+            .poll_request()
+    }
+
+    async fn poll_request_blocking(
+        &mut self,
+        resource: Resource<ListOutputRequestStream>,
+    ) -> Result<ListOutputRequest, Error> {
+        self.output_request_streams
+            .list_request_streams
+            .get_mut(resource.rep())
+            .ok_or_else(|| anyhow!("Output request stream not found"))?
+            .poll_request_blocking()
+            .await
+    }
+
+    fn drop(&mut self, resource: Resource<ListOutputRequestStream>) -> Result<(), Error> {
+        if self
+            .output_request_streams
+            .list_request_streams
+            .remove(resource.rep())
+        {
+            Ok(())
+        } else {
+            Err(anyhow!(
+                "Could not destroy non-existent output request stream"
+            ))
+        }
+    }
+}
+
+#[async_trait]
+impl HostTreeOutputRequestStream for WasmStorage {
+    async fn poll_request(
+        &mut self,
+        resource: Resource<TreeOutputRequestStream>,
+    ) -> Result<Option<TreeOutputRequest>, Error> {
+        self.output_request_streams
+            .tree_request_streams
+            .get_mut(resource.rep())
+            .ok_or_else(|| anyhow!("Output request stream not found"))?
+            .poll_request()
+    }
+
+    async fn poll_request_blocking(
+        &mut self,
+        resource: Resource<TreeOutputRequestStream>,
+    ) -> Result<TreeOutputRequest, Error> {
+        self.output_request_streams
+            .tree_request_streams
+            .get_mut(resource.rep())
+            .ok_or_else(|| anyhow!("Output request stream not found"))?
+            .poll_request_blocking()
+            .await
+    }
+
+    fn drop(&mut self, resource: Resource<TreeOutputRequestStream>) -> Result<(), Error> {
+        if self
+            .output_request_streams
+            .list_request_streams
+            .remove(resource.rep())
+        {
+            Ok(())
+        } else {
+            Err(anyhow!(
+                "Could not destroy non-existent output request stream"
+            ))
         }
     }
 }

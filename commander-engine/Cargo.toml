@@ -18,3 +18,4 @@ wasmtime-wasi = "19.0.0"
 wasmtime-wasi-http = "19.0.0"
 commander-data = { path = "../commander-data" }
 derive_more = "0.99.7"
+futures = "0.3.30"

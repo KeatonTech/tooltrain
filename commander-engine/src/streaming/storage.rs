@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::{collections::BTreeMap};
 
 use crate::datastream::DataStream;
+use crate::streaming::inputs::storage::InputStreams;
 
 use anyhow::{anyhow, Error};
 use cap_std::fs::Dir;
@@ -16,6 +17,8 @@ use wasmtime_wasi_http::{WasiHttpCtx, WasiHttpView};
 
 use wasmtime::component::*;
 use wasmtime_wasi::{DirPerms, FilePerms, WasiCtx, WasiCtxBuilder, WasiView};
+
+use super::outputs::storage::OutputRequestStreams;
 
 pub type ResourceId = u32;
 
@@ -150,7 +153,9 @@ pub(crate) struct WasmStorage {
     ctx: WasiCtx,
     http_ctx: WasiHttpCtx,
     pub(crate) outputs: DataStreamStorage,
+    pub(crate) output_request_streams: OutputRequestStreams,
     pub(crate) inputs: DataStreamStorage,
+    pub(crate) input_streams: InputStreams
 }
 
 impl WasiView for WasmStorage {
@@ -189,7 +194,9 @@ impl WasmStorage {
                 .build(),
             http_ctx: WasiHttpCtx,
             outputs: Default::default(),
+            output_request_streams: Default::default(),
             inputs: Default::default(),
+            input_streams: Default::default(),
         }
     }
 }

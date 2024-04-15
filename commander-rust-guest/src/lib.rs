@@ -1,4 +1,5 @@
-use commander::base::streaming_outputs::{ListOutputRequest, TreeOutputRequest};
+use commander::base::streaming_inputs::{ListChangeStream, TreeChangeStream, ValueChangeStream};
+use commander::base::streaming_outputs::{ListOutputRequest, ListOutputRequestStream, TreeOutputRequest, TreeOutputRequestStream};
 use commander_data::CommanderCoder;
 use std::task::Poll;
 use tokio_stream::{once, Stream, StreamExt};
@@ -35,7 +36,7 @@ macro_rules! export_guest {
     };
 }
 
-impl Stream for &ValueInput {
+impl Stream for ValueChangeStream {
     type Item = Option<Vec<u8>>;
 
     fn poll_next(
@@ -54,13 +55,14 @@ impl ValueInput {
         &self,
         data_type: DT,
     ) -> impl Stream<Item = Option<DT::Value>> + '_ {
+        let s = self.get_change_stream();
         once(self.get())
-            .chain(self)
+            .chain(s)
             .map(move |data| data.map(|bytes| data_type.decode(&bytes).unwrap()))
     }
 }
 
-impl Stream for ListInput {
+impl Stream for ListChangeStream {
     type Item = ListChange;
 
     fn poll_next(
@@ -74,7 +76,7 @@ impl Stream for ListInput {
     }
 }
 
-impl Stream for TreeInput {
+impl Stream for TreeChangeStream {
     type Item = TreeChange;
 
     fn poll_next(
@@ -88,7 +90,7 @@ impl Stream for TreeInput {
     }
 }
 
-impl Stream for ListOutput {
+impl Stream for ListOutputRequestStream {
     type Item = ListOutputRequest;
 
     fn poll_next(
@@ -102,7 +104,7 @@ impl Stream for ListOutput {
     }
 }
 
-impl Stream for TreeOutput {
+impl Stream for TreeOutputRequestStream {
     type Item = TreeOutputRequest;
 
     fn poll_next(

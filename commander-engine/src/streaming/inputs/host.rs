@@ -1,18 +1,17 @@
-use std::sync::Arc;
-
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use commander_data::{CommanderCoder, CommanderDataType, CommanderValue};
-use tokio::sync::broadcast::error::TryRecvError;
 use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
 use wasmtime::component::Resource;
 
 use crate::bindings::streaming::{ListInput, TreeInput};
 use crate::bindings::streaming_inputs::{
-    self, HostListInput, HostTreeInput, HostValueInput, TreeNode, ValueInput,
+    HostListChangeStream, HostListInput, HostTreeChangeStream, HostTreeInput,
+    HostValueChangeStream, HostValueInput, ListChange, ListChangeStream, TreeChange,
+    TreeChangeStream, TreeNode, ValueChangeStream, ValueInput,
 };
-use crate::datastream::{ListChange, TreeChange, ValueChange};
+use crate::datastream;
 use crate::streaming::storage::DataStreamResourceChange;
 use crate::streaming::WasmStorage;
 
@@ -32,77 +31,45 @@ impl HostValueInput for WasmStorage {
         return result;
     }
 
-    async fn poll_change(
+    async fn get_change_stream(
         &mut self,
         resource: Resource<ValueInput>,
-    ) -> Result<Option<Option<Vec<u8>>>, Error> {
+    ) -> Result<Resource<ValueChangeStream>, Error> {
         let data_stream_resource = self.inputs.get(resource.rep())?;
-        let data_type = &data_stream_resource.metadata.data_type;
-        let value_change = data_stream_resource
-            .stream
-            .read()
-            .try_get_value()?
-            .subscribe()
-            .try_recv();
-        match value_change {
-            Ok(ValueChange::Set(commander_value)) => {
-                Ok(Some(Some(data_type.encode((*commander_value).clone())?)))
-            }
-            Ok(ValueChange::Destroy) => Err(anyhow!("Input was destroyed")),
-            Err(TryRecvError::Empty) => Ok(None),
-            Err(e) => Err(anyhow!("RecvError when reading from ValueStream. {:?}", e)),
-        }
-    }
+        let data_type = data_stream_resource.metadata.data_type.clone();
+        let resource_rep = resource.rep();
 
-    async fn poll_change_blocking(
-        &mut self,
-        resource: Resource<ValueInput>,
-    ) -> Result<Option<Vec<u8>>, Error> {
-        let (mut data_stream_change_stream, mut value_stream) = {
-            let data_stream_resource = self.inputs.get(resource.rep())?;
+        let data_stream_change_stream = BroadcastStream::new(self.inputs.changes())
+            .map_while(|result| result.ok())
+            .filter(|change| change.is_data_stream_changed())
+            .filter(move |change| {
+                let DataStreamResourceChange::DataStreamChanged(changed_resource_id) = change
+                else {
+                    return false;
+                };
+                *changed_resource_id == resource_rep
+            });
 
-            let data_stream_change_stream = BroadcastStream::new(self.inputs.changes())
-                .map_while(|result| result.ok())
-                .filter(|change| change.is_data_stream_changed())
-                .filter(|change| {
-                    let DataStreamResourceChange::DataStreamChanged(changed_resource_id) = change
-                    else {
-                        return false;
-                    };
-                    *changed_resource_id == resource.rep()
-                });
-
-            let value_stream = data_stream_resource
+        let value_stream = BroadcastStream::new(
+            data_stream_resource
                 .stream
                 .read()
                 .try_get_value()?
-                .subscribe();
-            (data_stream_change_stream, value_stream)
-        };
+                .subscribe(),
+        )
+        .filter_map(Result::ok)
+        .filter_map(move |change| match change {
+            datastream::ValueChange::Set(value) => Some(data_type.encode((*value).clone()).ok()),
+            datastream::ValueChange::Destroy => None,
+        });
 
-        tokio::select! {
-            // Return the newest value from the current data stream
-            value_change = value_stream.recv() => {
-                let data_stream_resource = self.inputs.get(resource.rep())?;
-                let data_type = &data_stream_resource.metadata.data_type;
-
-                match value_change {
-                    Ok(ValueChange::Set(commander_value)) => {
-                        Ok(Some(data_type.encode((*commander_value).clone())?))
-                    }
-                    Ok(ValueChange::Destroy) => Err(anyhow!("Input was destroyed")),
-                    Err(e) => Err(anyhow!("RecvError when reading from ValueStream. {:?}", e)),
-                }
-            }
-
-            // OR, return the first value from the new data stream
-            _ = data_stream_change_stream.next() => {
-                let data_stream_resource = self.inputs.get(resource.rep())?;
-                let data_type = &data_stream_resource.metadata.data_type;
-                let snapshot: Option<Arc<CommanderValue>> = data_stream_resource.stream.read().snapshot().try_into().map_err(|_| anyhow!("Invalid DataStream type"))?;
-                snapshot.map(|commander_value| data_type.encode((*commander_value).clone())).transpose()
-            }
-        }
+        Ok(Resource::new_own(
+            self.input_streams.value_streams.add_stream(
+                resource_rep,
+                value_stream,
+                data_stream_change_stream,
+            ),
+        ))
     }
 
     async fn destroy(&mut self, resource: Resource<ValueInput>) -> Result<(), Error> {
@@ -154,73 +121,52 @@ impl HostListInput for WasmStorage {
         Ok(())
     }
 
-    async fn poll_change(
+    async fn get_change_stream(
         &mut self,
         resource: Resource<ListInput>,
-    ) -> Result<Option<streaming_inputs::ListChange>, Error> {
+    ) -> Result<Resource<ListChangeStream>, Error> {
         let data_stream_resource = self.inputs.get(resource.rep())?;
-        let data_type = &data_stream_resource.metadata.data_type;
-        let CommanderDataType::List(list_data_type) = data_type else {
-            return Err(anyhow!(
-                "Expected a list<> data type, got {}",
-                data_type.type_string()
-            ));
-        };
-        let list_change = data_stream_resource
-            .stream
-            .read()
-            .try_get_list()?
-            .subscribe()
-            .try_recv();
-        match list_change {
-            Ok(ListChange::Add(commander_value)) => Ok(Some(streaming_inputs::ListChange::Append(
-                data_type.encode((*commander_value).clone())?,
-            ))),
-            Ok(ListChange::Pop(_)) => Ok(Some(streaming_inputs::ListChange::Pop)),
-            Ok(ListChange::Clear) => Ok(Some(streaming_inputs::ListChange::Replace(
-                list_data_type.encode(vec![])?,
-            ))),
-            Ok(ListChange::HasMorePages(has_more_pages)) => Ok(Some(
-                streaming_inputs::ListChange::HasMorePages(has_more_pages),
-            )),
-            Ok(ListChange::Destroy) => Err(anyhow!("Input was destroyed")),
-            Err(TryRecvError::Empty) => Ok(None),
-            Err(e) => Err(anyhow!("RecvError when reading from ValueStream. {:?}", e)),
-        }
-    }
+        let data_type = data_stream_resource.metadata.data_type.clone();
+        let resource_rep = resource.rep();
 
-    async fn poll_change_blocking(
-        &mut self,
-        resource: Resource<ListInput>,
-    ) -> Result<streaming_inputs::ListChange, Error> {
-        let data_stream_resource = self.inputs.get(resource.rep())?;
-        let data_type = &data_stream_resource.metadata.data_type;
-        let CommanderDataType::List(list_data_type) = data_type else {
-            return Err(anyhow!(
-                "Expected a list<> data type, got {}",
-                data_type.type_string()
-            ));
-        };
-        let mut receiver = data_stream_resource
-            .stream
-            .read()
-            .try_get_list()?
-            .subscribe();
-        let list_change = receiver.recv().await;
-        match list_change {
-            Ok(ListChange::Add(commander_value)) => Ok(streaming_inputs::ListChange::Append(
-                data_type.encode((*commander_value).clone())?,
-            )),
-            Ok(ListChange::Pop(_)) => Ok(streaming_inputs::ListChange::Pop),
-            Ok(ListChange::Clear) => Ok(streaming_inputs::ListChange::Replace(
-                list_data_type.encode(vec![])?,
-            )),
-            Ok(ListChange::HasMorePages(has_more_pages)) => {
-                Ok(streaming_inputs::ListChange::HasMorePages(has_more_pages))
-            }
-            Ok(ListChange::Destroy) => Err(anyhow!("Input was destroyed")),
-            Err(e) => Err(anyhow!("RecvError when reading from ValueStream. {:?}", e)),
-        }
+        let data_stream_change_stream = BroadcastStream::new(self.inputs.changes())
+            .map_while(|result| result.ok())
+            .filter(|change| change.is_data_stream_changed())
+            .filter(move |change| {
+                let DataStreamResourceChange::DataStreamChanged(changed_resource_id) = change
+                else {
+                    return false;
+                };
+                *changed_resource_id == resource_rep
+            });
+
+        let list_change_stream = BroadcastStream::new(
+            data_stream_resource
+                .stream
+                .read()
+                .try_get_list()?
+                .subscribe(),
+        )
+        .filter_map(Result::ok)
+        .map(
+            move |data_stream_list_change| match data_stream_list_change {
+                datastream::ListChange::Add(v) => {
+                    ListChange::Append(data_type.encode((*v).clone()).unwrap())
+                }
+                datastream::ListChange::Pop(_) => ListChange::Pop,
+                datastream::ListChange::HasMorePages(_) => todo!(),
+                datastream::ListChange::Clear => ListChange::Replace(vec![]),
+                datastream::ListChange::Destroy => todo!(),
+            },
+        );
+
+        Ok(Resource::new_own(
+            self.input_streams.list_streams.add_stream(
+                resource.rep(),
+                list_change_stream,
+                data_stream_change_stream,
+            ),
+        ))
     }
 
     async fn destroy(&mut self, resource: Resource<ListInput>) -> Result<(), Error> {
@@ -265,63 +211,51 @@ impl HostTreeInput for WasmStorage {
         Ok(())
     }
 
-    async fn poll_change(
+    async fn get_change_stream(
         &mut self,
         resource: Resource<TreeInput>,
-    ) -> Result<Option<streaming_inputs::TreeChange>, Error> {
+    ) -> Result<Resource<TreeChangeStream>, Error> {
         let data_stream_resource = self.inputs.get(resource.rep())?;
-        let tree_change = data_stream_resource
-            .stream
-            .read()
-            .try_get_tree()?
-            .subscribe()
-            .try_recv();
-        match tree_change {
-            Ok(TreeChange::Add {
-                parent: _,
-                children,
-            }) => Ok(Some(streaming_inputs::TreeChange::Append(
-                children.into_iter().map(|c| (*c).clone()).collect(),
-            ))),
-            Ok(TreeChange::Remove(removed)) => {
-                Ok(Some(streaming_inputs::TreeChange::Remove(vec![removed
-                    .id
-                    .clone()])))
-            }
-            Ok(TreeChange::Clear) => Ok(Some(streaming_inputs::TreeChange::Replace(vec![]))),
-            Ok(TreeChange::Destroy) => Err(anyhow!("Input was destroyed")),
-            Err(TryRecvError::Empty) => Ok(None),
-            Err(e) => Err(anyhow!("RecvError when reading from ValueStream. {:?}", e)),
-        }
-    }
+        let resource_rep = resource.rep();
 
-    async fn poll_change_blocking(
-        &mut self,
-        resource: Resource<TreeInput>,
-    ) -> Result<streaming_inputs::TreeChange, Error> {
-        let data_stream_resource = self.inputs.get(resource.rep())?;
-        let mut receiver = data_stream_resource
-            .stream
-            .read()
-            .try_get_tree()?
-            .subscribe();
-        let tree_change = receiver.recv().await;
-        match tree_change {
-            Ok(TreeChange::Add {
-                parent: _,
-                children,
-            }) => Ok(streaming_inputs::TreeChange::Append(
-                children.into_iter().map(|c| (*c).clone()).collect(),
-            )),
-            Ok(TreeChange::Remove(removed)) => {
-                Ok(streaming_inputs::TreeChange::Remove(vec![removed
-                    .id
-                    .clone()]))
-            }
-            Ok(TreeChange::Clear) => Ok(streaming_inputs::TreeChange::Replace(vec![])),
-            Ok(TreeChange::Destroy) => Err(anyhow!("Input was destroyed")),
-            Err(e) => Err(anyhow!("RecvError when reading from ValueStream. {:?}", e)),
-        }
+        let data_stream_change_stream = BroadcastStream::new(self.inputs.changes())
+            .map_while(|result| result.ok())
+            .filter(|change| change.is_data_stream_changed())
+            .filter(move |change| {
+                let DataStreamResourceChange::DataStreamChanged(changed_resource_id) = change
+                else {
+                    return false;
+                };
+                *changed_resource_id == resource_rep
+            });
+
+        let tree_change_stream = BroadcastStream::new(
+            data_stream_resource
+                .stream
+                .read()
+                .try_get_tree()?
+                .subscribe(),
+        )
+        .filter_map(Result::ok)
+        .map(
+            move |data_stream_tree_change| match data_stream_tree_change {
+                datastream::TreeChange::Add {
+                    parent: _,
+                    children,
+                } => TreeChange::Append(children.iter().map(|a| (**a).clone()).collect()),
+                datastream::TreeChange::Remove(node) => TreeChange::Remove(vec![node.id.clone()]),
+                datastream::TreeChange::Clear => TreeChange::Replace(vec![]),
+                datastream::TreeChange::Destroy => todo!(),
+            },
+        );
+
+        Ok(Resource::new_own(
+            self.input_streams.tree_streams.add_stream(
+                resource.rep(),
+                tree_change_stream,
+                data_stream_change_stream,
+            ),
+        ))
     }
 
     async fn destroy(&mut self, resource: Resource<TreeInput>) -> Result<(), Error> {
@@ -330,6 +264,108 @@ impl HostTreeInput for WasmStorage {
 
     fn drop(&mut self, resource: Resource<TreeInput>) -> Result<(), Error> {
         if self.inputs.remove(resource.rep())? {
+            Ok(())
+        } else {
+            Err(anyhow!("Could not destroy non-existent input"))
+        }
+    }
+}
+
+#[async_trait]
+impl HostValueChangeStream for WasmStorage {
+    async fn poll_change(
+        &mut self,
+        resource: Resource<ValueChangeStream>,
+    ) -> Result<Option<Option<Vec<u8>>>, Error> {
+        self.input_streams
+            .value_streams
+            .get_mut(resource.rep())
+            .ok_or_else(|| anyhow!("Value change stream not found"))?
+            .poll_change()
+    }
+
+    async fn poll_change_blocking(
+        &mut self,
+        resource: Resource<ValueChangeStream>,
+    ) -> Result<Option<Vec<u8>>, Error> {
+        self.input_streams
+            .value_streams
+            .get_mut(resource.rep())
+            .ok_or_else(|| anyhow!("Value change stream not found"))?
+            .poll_change_blocking(self.inputs.clone())
+            .await
+    }
+
+    fn drop(&mut self, resource: Resource<ValueChangeStream>) -> Result<(), Error> {
+        if self.input_streams.value_streams.remove(resource.rep()) {
+            Ok(())
+        } else {
+            Err(anyhow!("Could not destroy non-existent input"))
+        }
+    }
+}
+
+#[async_trait]
+impl HostListChangeStream for WasmStorage {
+    async fn poll_change(
+        &mut self,
+        resource: Resource<ListChangeStream>,
+    ) -> Result<Option<ListChange>, Error> {
+        self.input_streams
+            .list_streams
+            .get_mut(resource.rep())
+            .ok_or_else(|| anyhow!("List change stream not found"))?
+            .poll_change()
+    }
+
+    async fn poll_change_blocking(
+        &mut self,
+        resource: Resource<ListChangeStream>,
+    ) -> Result<ListChange, Error> {
+        self.input_streams
+            .list_streams
+            .get_mut(resource.rep())
+            .ok_or_else(|| anyhow!("List change stream not found"))?
+            .poll_change_blocking(self.inputs.clone())
+            .await
+    }
+
+    fn drop(&mut self, resource: Resource<ListChangeStream>) -> Result<(), Error> {
+        if self.input_streams.list_streams.remove(resource.rep()) {
+            Ok(())
+        } else {
+            Err(anyhow!("Could not destroy non-existent input"))
+        }
+    }
+}
+
+#[async_trait]
+impl HostTreeChangeStream for WasmStorage {
+    async fn poll_change(
+        &mut self,
+        resource: Resource<TreeChangeStream>,
+    ) -> Result<Option<TreeChange>, Error> {
+        self.input_streams
+            .tree_streams
+            .get_mut(resource.rep())
+            .ok_or_else(|| anyhow!("Tree change stream not found"))?
+            .poll_change()
+    }
+
+    async fn poll_change_blocking(
+        &mut self,
+        resource: Resource<TreeChangeStream>,
+    ) -> Result<TreeChange, Error> {
+        self.input_streams
+            .tree_streams
+            .get_mut(resource.rep())
+            .ok_or_else(|| anyhow!("Tree change stream not found"))?
+            .poll_change_blocking(self.inputs.clone())
+            .await
+    }
+
+    fn drop(&mut self, resource: Resource<TreeChangeStream>) -> Result<(), Error> {
+        if self.input_streams.tree_streams.remove(resource.rep()) {
             Ok(())
         } else {
             Err(anyhow!("Could not destroy non-existent input"))
