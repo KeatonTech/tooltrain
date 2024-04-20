@@ -1,4 +1,9 @@
-use std::{future::Future, path::PathBuf, sync::Arc};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    future::Future,
+    path::PathBuf,
+    sync::Arc,
+};
 
 use anyhow::{anyhow, Error};
 
@@ -7,15 +12,18 @@ use commander_data::{CommanderCoder, CommanderDataType, CommanderValue};
 use tokio::sync::watch;
 
 use wasmtime::{
-    component::{Component, Linker}, Config, Engine, Store,
+    component::{Component, Linker},
+    Config, Engine, Store,
 };
 
 use crate::{
     bindings::{
-        inputs,
+        inputs::{self, ArgumentSpec, Schema},
         streaming::{Input, StreamingPlugin},
     },
-    streaming::{DataStreamStorage, InputHandle, Inputs, OutputRef, Outputs, ValueInputHandle, WasmStorage},
+    streaming::{
+        DataStreamStorage, Inputs, OutputRef, Outputs, WasmStorage,
+    },
 };
 
 struct CommanderEngineInternal {
@@ -110,81 +118,125 @@ impl CommanderStreamingProgram {
 pub struct StreamingRunBuilder {
     instance: StreamingPlugin,
     store: Store<WasmStorage>,
-    inputs: Vec<Input>,
+    inputs: BTreeMap<String, Input>,
+    schema: Schema,
 }
 
 impl StreamingRunBuilder {
     pub async fn new(program: &mut CommanderStreamingProgram) -> Result<Self, Error> {
         let (store, instance) = program.load_instance().await?;
+        let schema = program.get_schema().await?;
+
+        schema.arguments.iter().map(|a| &a.name).try_fold(
+            BTreeSet::<String>::new(),
+            |mut existing_names, name| {
+                if existing_names.contains(name) {
+                    Err(anyhow!("Schema contains duplicate argument name: {}", name))
+                } else {
+                    existing_names.insert(name.to_string());
+                    Ok(existing_names)
+                }
+            },
+        )?;
+
         Ok(Self {
             instance,
             store,
-            inputs: vec![],
+            inputs: BTreeMap::new(),
+            schema,
         })
     }
 
-    pub fn bind_input<ValueType, O: OutputRef>(
-        &mut self,
-        name: String,
-        description: String,
-        data_type: ValueType,
-        to_output: O 
-    ) -> Result<InputHandle, Error>
-    where
-        ValueType: CommanderCoder,
-        ValueType: Into<CommanderDataType>,
-        ValueType::Value: Into<CommanderValue>,
-    {
-        let inputs = Inputs(&self.store.data().inputs);
-        let input_handle = inputs.bind_input(name, description, data_type, to_output)?;
-        self.inputs.push(input_handle.as_input_binding());
-        Ok(input_handle)
+    pub fn schema(&self) -> &Schema {
+        &self.schema
     }
 
-    pub fn add_value_input<ValueType>(
-        &mut self,
-        name: String,
-        description: String,
-        data_type: ValueType,
-        initial_value: Option<ValueType::Value>,
-    ) -> Result<ValueInputHandle<ValueType>, Error>
-    where
-        ValueType: CommanderCoder,
-        ValueType: Into<CommanderDataType>,
-        ValueType::Value: Into<CommanderValue>,
-    {
-        let inputs = Inputs(&self.store.data().inputs);
-        let input_handle = inputs.new_value_input(name, description, data_type, initial_value)?;
-        self.inputs.push(input_handle.as_input_binding());
-        Ok(input_handle)
-    }
-
-    pub fn with_static_input<ValueType>(
+    pub fn bind_argument<ValueType, O: OutputRef>(
         mut self,
-        name: String,
-        description: String,
-        data_type: ValueType,
-        value: ValueType::Value,
-    ) -> Result<Self, Error>
+        argument: &ArgumentSpec,
+        to_output: O,
+    ) -> Result<StreamingRunBuilder, Error>
     where
         ValueType: CommanderCoder,
         ValueType: Into<CommanderDataType>,
         ValueType::Value: Into<CommanderValue>,
     {
-        let _ = self.add_value_input(name, description, data_type, Some(value))?;
+        let inputs = Inputs(&self.store.data().inputs);
+        let data_type = commander_data::parse(&argument.data_type)?;
+        let input_handle =
+            inputs.bind_input(argument.name.clone(), argument.description.clone(), data_type, to_output)?;
+        self.inputs.insert(argument.name.clone(), input_handle.as_input_binding());
         Ok(self)
     }
 
-    pub fn start(self) -> CommanderStreamingProgramRun {
+    pub fn set_value_argument<ValueType>(
+        mut self,
+        argument: &ArgumentSpec,
+        initial_value: ValueType::Value,
+    ) -> Result<StreamingRunBuilder, Error>
+    where
+        ValueType: CommanderCoder,
+        ValueType: Into<CommanderDataType>,
+        ValueType::Value: Into<CommanderValue>,
+    {
+        let inputs = Inputs(&self.store.data().inputs);
+        let data_type = commander_data::parse(&argument.data_type)?;
+        let input_handle = inputs.new_value_input(
+            argument.name.clone(),
+            argument.description.clone(),
+            data_type,
+            Some(initial_value.into()),
+        )?;
+        self.inputs.insert(argument.name.clone(), input_handle.as_input_binding());
+        Ok(self)
+    }
+
+    pub fn build_arguments<F: FnOnce(Self, Schema) -> Result<Self, Error>>(
+        self,
+        f: F,
+    ) -> Result<StreamingRunBuilder, Error> {
+        let schema = self.schema.clone();
+        f(self, schema)
+    }
+
+    pub fn start(self) -> Result<CommanderStreamingProgramRun, Error> {
         let Self {
             instance,
             store,
-            inputs,
+            mut inputs,
+            schema,
         } = self;
         let inputs_storage = store.data().inputs.clone();
         let outputs_storage = store.data().outputs.clone();
-        let run_result = Self::run_wrapper(store, instance, inputs);
-        CommanderStreamingProgramRun::new(inputs_storage, outputs_storage, run_result)
+
+        let input_storage_clone = inputs_storage.clone();
+        let full_arguments: Vec<Input> = schema
+            .arguments
+            .into_iter()
+            .map(move |arg_spec| {
+                let maybe_configured_input = inputs.remove(&arg_spec.name);
+                if let Some(configured_input) = maybe_configured_input {
+                    Ok(configured_input)
+                } else {
+                    let data_type = commander_data::parse(&arg_spec.data_type)?;
+                    Ok(match data_type {
+                        CommanderDataType::List(l) => Inputs(&input_storage_clone)
+                            .new_generic_list_input(arg_spec.name, arg_spec.description, l)?
+                            .as_input_binding(),
+                        _ => Inputs(&input_storage_clone)
+                            .new_value_input(arg_spec.name, arg_spec.description, data_type, None)?
+                            .as_input_binding(),
+                    })
+                }
+            })
+            .collect::<Result<Vec<Input>, Error>>()?;
+
+        let run_result = Self::run_wrapper(store, instance, full_arguments);
+        Ok(CommanderStreamingProgramRun::new(
+            inputs_storage,
+            outputs_storage,
+            run_result,
+        ))
     }
 
     async fn run_wrapper(

@@ -4,10 +4,10 @@ use anyhow::{anyhow, Error};
 use commander_data::CommanderPathDataType;
 use commander_engine::{
     streaming::{OutputChange, OutputHandle, Outputs, TreeOutputHandle},
-    CommanderEngine, ProgramSource, CommanderStreamingProgramRun,
+    CommanderEngine, CommanderStreamingProgramRun, ProgramSource,
 };
 
-use tokio_stream::{StreamExt};
+use tokio_stream::StreamExt;
 use tokio_util::io::ReaderStream;
 
 #[tokio::main]
@@ -20,13 +20,13 @@ async fn main() -> Result<(), Error> {
     let mut run = file_explorer_program
         .run()
         .await?
-        .with_static_input(
-            "Path".to_owned(),
-            "The base file path to load".to_owned(),
-            CommanderPathDataType {},
-            PathBuf::from_str("Users").unwrap(),
-        )?
-        .start();
+        .build_arguments(|builder, schema| {
+            builder.set_value_argument::<CommanderPathDataType>(
+                schema.arguments.first().unwrap(),
+                PathBuf::from_str("Users").unwrap(),
+            )
+        })?
+        .start()?;
 
     let tree_output = get_tree_output(&run.outputs()).await?;
     tokio::spawn(listen_for_tree_changes(tree_output.clone(), run.clone()));
@@ -63,7 +63,10 @@ async fn get_tree_output(outputs: &Outputs<'_>) -> Result<TreeOutputHandle, Erro
     Err(anyhow!("Tree output was never added"))
 }
 
-async fn listen_for_tree_changes(tree_output_handle: TreeOutputHandle, run: CommanderStreamingProgramRun) {
+async fn listen_for_tree_changes(
+    tree_output_handle: TreeOutputHandle,
+    run: CommanderStreamingProgramRun,
+) {
     let binding = tree_output_handle.load(run.outputs());
     let mut stream = binding.value_stream().unwrap();
     while let Some(tree_change) = stream.next().await {

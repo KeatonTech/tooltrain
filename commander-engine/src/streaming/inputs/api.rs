@@ -1,15 +1,19 @@
 use std::{collections::BTreeMap, marker::PhantomData, sync::Arc};
 
-use commander_data::{CommanderCoder, CommanderDataType, CommanderValue};
+use commander_data::{
+    CommanderCoder, CommanderDataType, CommanderListDataType, CommanderTypedListDataType,
+    CommanderValue,
+};
 use parking_lot::RwLock;
 use tokio_stream::{once, wrappers::BroadcastStream, Stream, StreamExt};
 use wasmtime::component::Resource;
 
 use crate::{
     bindings,
-    datastream::{DataStream, DataStreamSnapshot, ValueStream},
+    datastream::{DataStream, DataStreamSnapshot, ListStream, ValueStream},
     streaming::{
-        storage::{DataStreamMetadata, DataStreamResourceChange, DataStreamType, ResourceId}, DataStreamStorage, OutputRef, ValueOutputRef
+        storage::{DataStreamMetadata, DataStreamResourceChange, DataStreamType, ResourceId},
+        DataStreamStorage, ListOutputRef, OutputRef, ValueOutputRef,
     },
 };
 use anyhow::Error;
@@ -73,8 +77,67 @@ where
 }
 
 #[derive(Clone, Debug)]
+pub struct ListInputHandle<ValueType: CommanderCoder> {
+    pub metadata: DataStreamMetadata,
+    value_type: std::marker::PhantomData<ValueType>,
+}
+
+impl<ValueType: CommanderCoder> ListInputHandle<ValueType> {
+    pub(crate) fn as_input_binding(&self) -> bindings::streaming_inputs::Input {
+        let value_resource: Resource<bindings::streaming_inputs::ListInput> =
+            Resource::new_own(self.metadata.id);
+        bindings::streaming_inputs::Input::ListInput(value_resource)
+    }
+
+    pub fn load<'a>(&self, from_storage: Inputs<'a>) -> ListInputRef<'a, ValueType> {
+        ListInputRef {
+            storage: from_storage.0,
+            id: self.metadata.id,
+            _phantom: PhantomData,
+        }
+    }
+
+    pub fn downcast<T: CommanderCoder>(&self) -> ListInputHandle<T>
+    where
+        T: Into<ValueType>,
+    {
+        ListInputHandle {
+            metadata: self.metadata.clone(),
+            value_type: PhantomData,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct ListInputRef<'a, ValueType: CommanderCoder> {
+    storage: &'a DataStreamStorage,
+    id: ResourceId,
+    _phantom: PhantomData<ValueType>,
+}
+
+impl<'a, ValueType: CommanderCoder> ListInputRef<'a, ValueType>
+where
+    ValueType::Value: Into<CommanderValue>,
+{
+    pub fn add(&self, value: ValueType::Value) -> Result<(), Error> {
+        self.storage
+            .get(self.id)?
+            .stream
+            .write()
+            .try_get_list_mut()?
+            .add(value.into())
+    }
+
+    pub fn bind(&self, from: ListOutputRef<'_>) -> Result<(), Error> {
+        self.storage
+            .change_data_stream(self.id, from.inner_data_stream()?)
+    }
+}
+
+#[derive(Clone, Debug)]
 pub enum InputHandle {
     Value(ValueInputHandle<CommanderDataType>),
+    List(ListInputHandle<CommanderDataType>),
 }
 
 impl InputHandle {
@@ -84,13 +147,25 @@ impl InputHandle {
                 metadata,
                 value_type: PhantomData,
             }),
+            DataStreamType::List => InputHandle::List(ListInputHandle::<CommanderDataType> {
+                metadata,
+                value_type: PhantomData,
+            }),
             _ => unimplemented!(),
+        }
+    }
+
+    fn metadata(&self) -> &DataStreamMetadata {
+        match self {
+            InputHandle::Value(handle) => &handle.metadata,
+            InputHandle::List(handle) => &handle.metadata,
         }
     }
 
     pub(crate) fn as_input_binding(&self) -> bindings::streaming_inputs::Input {
         match self {
             InputHandle::Value(handle) => handle.as_input_binding(),
+            InputHandle::List(handle) => handle.as_input_binding(),
         }
     }
 }
@@ -136,6 +211,10 @@ impl<'a> Inputs<'a> {
             .collect()
     }
 
+    pub fn get_handle(&self, input_name: &str) -> Option<InputHandle> {
+        self.handles().into_iter().find(|handle| handle.metadata().name == input_name)
+    }
+
     pub fn new_value_input<ValueType>(
         &self,
         name: String,
@@ -162,6 +241,46 @@ impl<'a> Inputs<'a> {
         })
     }
 
+    pub fn new_list_input<V: CommanderCoder + 'static>(
+        &self,
+        name: String,
+        description: String,
+        data_type: CommanderTypedListDataType<V>,
+    ) -> Result<ListInputHandle<V>, Error>
+    where
+        CommanderTypedListDataType<V>: Into<CommanderListDataType>,
+    {
+        let resource_id = self.0.add(
+            name,
+            description,
+            CommanderDataType::List(data_type.into()),
+            Arc::new(RwLock::new(DataStream::List(ListStream::new()))),
+        )?;
+        Ok(ListInputHandle {
+            metadata: self.0.get(resource_id).unwrap().metadata.clone(),
+            value_type: PhantomData,
+        })
+    }
+
+    pub(crate) fn new_generic_list_input(
+        &self,
+        name: String,
+        description: String,
+        data_type: CommanderListDataType,
+    ) -> Result<ListInputHandle<CommanderDataType>, Error>
+    {
+        let resource_id = self.0.add(
+            name,
+            description,
+            CommanderDataType::List(data_type.into()),
+            Arc::new(RwLock::new(DataStream::List(ListStream::new()))),
+        )?;
+        Ok(ListInputHandle {
+            metadata: self.0.get(resource_id).unwrap().metadata.clone(),
+            value_type: PhantomData,
+        })
+    }
+
     pub fn bind_input<ValueType, O: OutputRef>(
         &self,
         name: String,
@@ -180,6 +299,8 @@ impl<'a> Inputs<'a> {
             data_type.into(),
             from.inner_data_stream()?.clone(),
         )?;
-        Ok(InputHandle::from_metadata(self.0.get(resource_id).unwrap().metadata.clone()))
+        Ok(InputHandle::from_metadata(
+            self.0.get(resource_id).unwrap().metadata.clone(),
+        ))
     }
 }
