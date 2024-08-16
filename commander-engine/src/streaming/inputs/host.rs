@@ -113,7 +113,8 @@ impl HostListInput for WasiImpl<&mut WasmStorage> {
         resource: Resource<ListInput>,
         limit: u32,
     ) -> Result<(), Error> {
-        self.0.inputs
+        self.0
+            .inputs
             .get(resource.rep())?
             .stream
             .write()
@@ -186,7 +187,8 @@ impl HostListInput for WasiImpl<&mut WasmStorage> {
 #[async_trait]
 impl HostTreeInput for WasiImpl<&mut WasmStorage> {
     async fn get(&mut self, resource: Resource<TreeInput>) -> Result<Vec<TreeNode>, Error> {
-        Ok(self.0
+        Ok(self
+            .0
             .inputs
             .get(resource.rep())?
             .stream
@@ -203,7 +205,8 @@ impl HostTreeInput for WasiImpl<&mut WasmStorage> {
         resource: Resource<TreeInput>,
         of_parent: String,
     ) -> Result<(), Error> {
-        self.0.inputs
+        self.0
+            .inputs
             .get(resource.rep())?
             .stream
             .write()
@@ -278,7 +281,8 @@ impl HostValueChangeStream for WasiImpl<&mut WasmStorage> {
         &mut self,
         resource: Resource<ValueChangeStream>,
     ) -> Result<Option<Option<Vec<u8>>>, Error> {
-        self.0.input_streams
+        self.0
+            .input_streams
             .value_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("Value change stream not found"))?
@@ -289,7 +293,8 @@ impl HostValueChangeStream for WasiImpl<&mut WasmStorage> {
         &mut self,
         resource: Resource<ValueChangeStream>,
     ) -> Result<Option<Vec<u8>>, Error> {
-        self.0.input_streams
+        self.0
+            .input_streams
             .value_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("Value change stream not found"))?
@@ -312,7 +317,8 @@ impl HostListChangeStream for WasiImpl<&mut WasmStorage> {
         &mut self,
         resource: Resource<ListChangeStream>,
     ) -> Result<Option<ListChange>, Error> {
-        self.0.input_streams
+        self.0
+            .input_streams
             .list_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("List change stream not found"))?
@@ -323,7 +329,8 @@ impl HostListChangeStream for WasiImpl<&mut WasmStorage> {
         &mut self,
         resource: Resource<ListChangeStream>,
     ) -> Result<ListChange, Error> {
-        self.0.input_streams
+        self.0
+            .input_streams
             .list_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("List change stream not found"))?
@@ -346,7 +353,8 @@ impl HostTreeChangeStream for WasiImpl<&mut WasmStorage> {
         &mut self,
         resource: Resource<TreeChangeStream>,
     ) -> Result<Option<TreeChange>, Error> {
-        self.0.input_streams
+        self.0
+            .input_streams
             .tree_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("Tree change stream not found"))?
@@ -357,7 +365,8 @@ impl HostTreeChangeStream for WasiImpl<&mut WasmStorage> {
         &mut self,
         resource: Resource<TreeChangeStream>,
     ) -> Result<TreeChange, Error> {
-        self.0.input_streams
+        self.0
+            .input_streams
             .tree_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("Tree change stream not found"))?

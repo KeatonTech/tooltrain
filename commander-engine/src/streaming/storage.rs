@@ -1,5 +1,5 @@
-use std::sync::Arc;
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use crate::datastream::DataStream;
 use crate::streaming::inputs::storage::InputStreams;
@@ -8,9 +8,7 @@ use anyhow::{anyhow, Error};
 
 use commander_data::CommanderDataType;
 use derive_more::{IsVariant, TryInto, Unwrap};
-use parking_lot::{
-    MappedRwLockReadGuard, RwLock, RwLockReadGuard,
-};
+use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 use wasmtime_wasi_http::{WasiHttpCtx, WasiHttpView};
 
@@ -98,7 +96,7 @@ impl DataStreamStorage {
             next_index,
             DataStreamResource {
                 metadata: metadata.clone(),
-                stream
+                stream,
             },
         );
         let _ = writer
@@ -129,10 +127,20 @@ impl DataStreamStorage {
             .map_err(|_| anyhow!("Output does not exist"))
     }
 
-    pub(crate) fn change_data_stream(&self, id: ResourceId, new_stream: Arc<RwLock<DataStream>>) -> Result<(), Error> {
+    pub(crate) fn change_data_stream(
+        &self,
+        id: ResourceId,
+        new_stream: Arc<RwLock<DataStream>>,
+    ) -> Result<(), Error> {
         let mut writer = self.0.write();
-        writer.state.get_mut(&id).ok_or_else(|| anyhow!("Stream does not exist"))?.stream = new_stream;
-        writer.changes.send(DataStreamResourceChange::DataStreamChanged(id))?;
+        writer
+            .state
+            .get_mut(&id)
+            .ok_or_else(|| anyhow!("Stream does not exist"))?
+            .stream = new_stream;
+        writer
+            .changes
+            .send(DataStreamResourceChange::DataStreamChanged(id))?;
         Ok(())
     }
 
@@ -154,7 +162,7 @@ pub(crate) struct WasmStorage {
     pub(crate) outputs: DataStreamStorage,
     pub(crate) output_request_streams: OutputRequestStreams,
     pub(crate) inputs: DataStreamStorage,
-    pub(crate) input_streams: InputStreams
+    pub(crate) input_streams: InputStreams,
 }
 
 impl WasiView for WasmStorage {
@@ -182,12 +190,8 @@ impl WasmStorage {
         Self {
             table: ResourceTable::new(),
             ctx: WasiCtxBuilder::new()
-                .preopened_dir(
-                    "/",
-                    "/",
-                    DirPerms::READ,
-                    FilePerms::READ,
-                ).unwrap()
+                .preopened_dir("/", "/", DirPerms::READ, FilePerms::READ)
+                .unwrap()
                 .inherit_stdio()
                 .inherit_stderr()
                 .build(),

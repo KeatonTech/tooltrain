@@ -1,7 +1,9 @@
 use std::{collections::BTreeMap, sync::Arc};
 
 use crate::{
-    datastream::{DataStream, DataStreamSnapshot, ListChange, TreeChange, TreeStreamNode, ValueChange},
+    datastream::{
+        DataStream, DataStreamSnapshot, ListChange, TreeChange, TreeStreamNode, ValueChange,
+    },
     streaming::storage::{
         DataStreamMetadata, DataStreamResourceChange, DataStreamStorage, DataStreamType, ResourceId,
     },
@@ -19,7 +21,7 @@ fn make_broadcast_stream<T: Clone + Send + 'static>(
 }
 
 pub trait OutputRef {
-    fn inner_data_stream(&self) -> Result<Arc<RwLock<DataStream>>, Error>; 
+    fn inner_data_stream(&self) -> Result<Arc<RwLock<DataStream>>, Error>;
 }
 
 #[derive(Clone, Debug)]
@@ -68,7 +70,9 @@ impl<'a> ValueOutputRef<'a> {
         ))
     }
 
-    pub fn value_stream(&self) -> Result<impl Stream<Item = Option<Arc<CommanderValue>>> + '_, Error> {
+    pub fn value_stream(
+        &self,
+    ) -> Result<impl Stream<Item = Option<Arc<CommanderValue>>> + '_, Error> {
         Ok(once(self.value()?).chain(self.updates_stream()?.map_while(|_| self.value().ok())))
     }
 }
@@ -125,7 +129,9 @@ impl<'a> ListOutputRef<'a> {
         ))
     }
 
-    pub fn values_stream(&self) -> Result<impl Stream<Item = Vec<Arc<CommanderValue>>> + '_, Error> {
+    pub fn values_stream(
+        &self,
+    ) -> Result<impl Stream<Item = Vec<Arc<CommanderValue>>> + '_, Error> {
         Ok(once(self.value()?).chain(self.updates_stream()?.map_while(|_| self.value().ok())))
     }
 

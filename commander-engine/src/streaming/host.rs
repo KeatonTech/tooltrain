@@ -125,5 +125,11 @@ impl StreamingPluginImports for WasiImpl<&mut WasmStorage> {
 }
 
 impl crate::bindings::streaming::commander::base::inputs::Host for WasiImpl<&mut WasmStorage> {}
-impl crate::bindings::streaming::commander::base::streaming_inputs::Host for WasiImpl<&mut WasmStorage> {}
-impl crate::bindings::streaming::commander::base::streaming_outputs::Host for WasiImpl<&mut WasmStorage> {}
+impl crate::bindings::streaming::commander::base::streaming_inputs::Host
+    for WasiImpl<&mut WasmStorage>
+{
+}
+impl crate::bindings::streaming::commander::base::streaming_outputs::Host
+    for WasiImpl<&mut WasmStorage>
+{
+}

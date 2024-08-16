@@ -33,7 +33,7 @@ pub struct TreeStream {
 impl TreeStream {
     pub(crate) fn new() -> Self {
         let (updates, _) = broadcast::channel::<TreeChange>(128);
-        let (load_children_sender,_) = broadcast::channel::<String>(32);
+        let (load_children_sender, _) = broadcast::channel::<String>(32);
         TreeStream {
             nodes: HashMap::new(),
             edges: HashMap::new(),

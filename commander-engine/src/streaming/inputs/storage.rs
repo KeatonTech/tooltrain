@@ -2,11 +2,16 @@ use std::collections::BTreeMap;
 
 use tokio_stream::Stream;
 
-use crate::{bindings::streaming_inputs::{ListChange, TreeChange}, streaming::storage::DataStreamResourceChange};
+use crate::{
+    bindings::streaming_inputs::{ListChange, TreeChange},
+    streaming::storage::DataStreamResourceChange,
+};
 
 use super::change_streams::{InputChangeStream, ReplacementChangeFromDataStreamSnapshot};
 
-pub(super) struct InputStreamsStorage<T: Clone + ReplacementChangeFromDataStreamSnapshot>(BTreeMap<u32, InputChangeStream<T>>);
+pub(super) struct InputStreamsStorage<T: Clone + ReplacementChangeFromDataStreamSnapshot>(
+    BTreeMap<u32, InputChangeStream<T>>,
+);
 
 impl<T: Clone + ReplacementChangeFromDataStreamSnapshot> Default for InputStreamsStorage<T> {
     fn default() -> Self {
@@ -27,18 +32,17 @@ impl<T: Clone + ReplacementChangeFromDataStreamSnapshot> InputStreamsStorage<T> 
         S: 'static,
         R: Stream<Item = DataStreamResourceChange>,
         R: Send,
-        R: 'static
+        R: 'static,
     {
-        let next_id = self
-            .0
-            .last_key_value()
-            .map(|(k, _)| k + 1)
-            .unwrap_or(0);
-        self.0.insert(next_id, InputChangeStream::new(
-            input_id,
-            Box::pin(stream_changes),
-            Box::pin(resource_changes)
-        ));
+        let next_id = self.0.last_key_value().map(|(k, _)| k + 1).unwrap_or(0);
+        self.0.insert(
+            next_id,
+            InputChangeStream::new(
+                input_id,
+                Box::pin(stream_changes),
+                Box::pin(resource_changes),
+            ),
+        );
         next_id
     }
 

@@ -1,5 +1,5 @@
+use derive_more::{IsVariant, TryInto, Unwrap};
 use std::sync::Arc;
-use derive_more::{TryInto, IsVariant, Unwrap};
 
 mod list;
 mod tree;

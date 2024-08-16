@@ -23,7 +23,8 @@ use wasmtime_wasi::WasiImpl;
 impl HostValueOutput for WasiImpl<&mut WasmStorage> {
     async fn set(&mut self, resource: Resource<ValueOutput>, value: Vec<u8>) -> Result<(), Error> {
         let data_type = &self.0.outputs.get(resource.rep())?.metadata.data_type;
-        self.0.outputs
+        self.0
+            .outputs
             .get(resource.rep())
             .unwrap()
             .stream
@@ -49,7 +50,8 @@ impl HostValueOutput for WasiImpl<&mut WasmStorage> {
 impl HostListOutput for WasiImpl<&mut WasmStorage> {
     async fn add(&mut self, resource: Resource<ListOutput>, value: Vec<u8>) -> Result<(), Error> {
         let data_type = &self.0.outputs.get(resource.rep())?.metadata.data_type;
-        self.0.outputs
+        self.0
+            .outputs
             .get(resource.rep())
             .unwrap()
             .stream
@@ -59,7 +61,8 @@ impl HostListOutput for WasiImpl<&mut WasmStorage> {
     }
 
     async fn pop(&mut self, resource: Resource<ListOutput>) -> Result<(), Error> {
-        self.0.outputs
+        self.0
+            .outputs
             .get(resource.rep())?
             .stream
             .write()
@@ -68,7 +71,8 @@ impl HostListOutput for WasiImpl<&mut WasmStorage> {
     }
 
     async fn clear(&mut self, resource: Resource<ListOutput>) -> Result<(), Error> {
-        self.0.outputs
+        self.0
+            .outputs
             .get(resource.rep())?
             .stream
             .write()
@@ -81,7 +85,8 @@ impl HostListOutput for WasiImpl<&mut WasmStorage> {
         resource: Resource<ListOutput>,
         has_more_rows: bool,
     ) -> Result<(), Error> {
-        self.0.outputs
+        self.0
+            .outputs
             .get(resource.rep())?
             .stream
             .write()
@@ -98,20 +103,24 @@ impl HostListOutput for WasiImpl<&mut WasmStorage> {
         resource: Resource<ListOutput>,
     ) -> Result<Resource<ListOutputRequestStream>, Error> {
         Ok(Resource::new_own(
-            self.0.output_request_streams.list_request_streams.add_stream(
-                BroadcastStream::new(
-                    self.0.outputs
-                        .get(resource.rep())?
-                        .stream
-                        .read()
-                        .try_get_list()?
-                        .get_page_request_stream(),
-                )
-                .map(|request_result| match request_result {
-                    Ok(count) => ListOutputRequest::LoadMore(count),
-                    Err(_) => ListOutputRequest::Close,
-                }),
-            ),
+            self.0
+                .output_request_streams
+                .list_request_streams
+                .add_stream(
+                    BroadcastStream::new(
+                        self.0
+                            .outputs
+                            .get(resource.rep())?
+                            .stream
+                            .read()
+                            .try_get_list()?
+                            .get_page_request_stream(),
+                    )
+                    .map(|request_result| match request_result {
+                        Ok(count) => ListOutputRequest::LoadMore(count),
+                        Err(_) => ListOutputRequest::Close,
+                    }),
+                ),
         ))
     }
 
@@ -132,7 +141,8 @@ impl HostTreeOutput for WasiImpl<&mut WasmStorage> {
         parent: Option<String>,
         nodes: Vec<TreeNode>,
     ) -> Result<(), Error> {
-        self.0.outputs
+        self.0
+            .outputs
             .get(resource.rep())?
             .stream
             .write()
@@ -145,7 +155,8 @@ impl HostTreeOutput for WasiImpl<&mut WasmStorage> {
         resource: Resource<TreeOutput>,
         parent: String,
     ) -> Result<(), Error> {
-        self.0.outputs
+        self.0
+            .outputs
             .get(resource.rep())?
             .stream
             .write()
@@ -154,7 +165,8 @@ impl HostTreeOutput for WasiImpl<&mut WasmStorage> {
     }
 
     async fn clear(&mut self, resource: Resource<TreeOutput>) -> Result<(), Error> {
-        self.0.outputs
+        self.0
+            .outputs
             .get(resource.rep())?
             .stream
             .write()
@@ -171,20 +183,24 @@ impl HostTreeOutput for WasiImpl<&mut WasmStorage> {
         resource: Resource<TreeOutput>,
     ) -> Result<Resource<TreeOutputRequestStream>, Error> {
         Ok(Resource::new_own(
-            self.0.output_request_streams.tree_request_streams.add_stream(
-                BroadcastStream::new(
-                    self.0.outputs
-                        .get(resource.rep())?
-                        .stream
-                        .write()
-                        .try_get_tree_mut()?
-                        .get_request_children_stream(),
-                )
-                .map(|request_result| match request_result {
-                    Ok(parent) => TreeOutputRequest::LoadChildren(parent),
-                    Err(_) => TreeOutputRequest::Close,
-                }),
-            ),
+            self.0
+                .output_request_streams
+                .tree_request_streams
+                .add_stream(
+                    BroadcastStream::new(
+                        self.0
+                            .outputs
+                            .get(resource.rep())?
+                            .stream
+                            .write()
+                            .try_get_tree_mut()?
+                            .get_request_children_stream(),
+                    )
+                    .map(|request_result| match request_result {
+                        Ok(parent) => TreeOutputRequest::LoadChildren(parent),
+                        Err(_) => TreeOutputRequest::Close,
+                    }),
+                ),
         ))
     }
 
@@ -203,7 +219,8 @@ impl HostListOutputRequestStream for WasiImpl<&mut WasmStorage> {
         &mut self,
         resource: Resource<ListOutputRequestStream>,
     ) -> Result<Option<ListOutputRequest>, Error> {
-        self.0.output_request_streams
+        self.0
+            .output_request_streams
             .list_request_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("Output request stream not found"))?
@@ -214,7 +231,8 @@ impl HostListOutputRequestStream for WasiImpl<&mut WasmStorage> {
         &mut self,
         resource: Resource<ListOutputRequestStream>,
     ) -> Result<ListOutputRequest, Error> {
-        self.0.output_request_streams
+        self.0
+            .output_request_streams
             .list_request_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("Output request stream not found"))?
@@ -223,7 +241,8 @@ impl HostListOutputRequestStream for WasiImpl<&mut WasmStorage> {
     }
 
     fn drop(&mut self, resource: Resource<ListOutputRequestStream>) -> Result<(), Error> {
-        if self.0
+        if self
+            .0
             .output_request_streams
             .list_request_streams
             .remove(resource.rep())
@@ -243,7 +262,8 @@ impl HostTreeOutputRequestStream for WasiImpl<&mut WasmStorage> {
         &mut self,
         resource: Resource<TreeOutputRequestStream>,
     ) -> Result<Option<TreeOutputRequest>, Error> {
-        self.0.output_request_streams
+        self.0
+            .output_request_streams
             .tree_request_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("Output request stream not found"))?
@@ -254,7 +274,8 @@ impl HostTreeOutputRequestStream for WasiImpl<&mut WasmStorage> {
         &mut self,
         resource: Resource<TreeOutputRequestStream>,
     ) -> Result<TreeOutputRequest, Error> {
-        self.0.output_request_streams
+        self.0
+            .output_request_streams
             .tree_request_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("Output request stream not found"))?
@@ -263,7 +284,8 @@ impl HostTreeOutputRequestStream for WasiImpl<&mut WasmStorage> {
     }
 
     fn drop(&mut self, resource: Resource<TreeOutputRequestStream>) -> Result<(), Error> {
-        if self.0
+        if self
+            .0
             .output_request_streams
             .list_request_streams
             .remove(resource.rep())

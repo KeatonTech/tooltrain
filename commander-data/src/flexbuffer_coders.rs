@@ -1,6 +1,6 @@
 use anyhow::Error;
 use flexbuffers::{FlexbufferSerializer, Reader};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 pub trait CommanderCoder {
     type Value;
@@ -41,7 +41,7 @@ pub trait CommanderWireFormatCoder {
 impl<D> CommanderCoder for D
 where
     D: CommanderWireFormatCoder,
-    D: Send + Sync
+    D: Send + Sync,
 {
     type Value = D::Value;
 
@@ -63,7 +63,7 @@ where
     }
 }
 
-pub trait CommanderPrimitiveCoder{
+pub trait CommanderPrimitiveCoder {
     type Value;
     fn type_string__(&self) -> &'static str;
 }

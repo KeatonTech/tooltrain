@@ -47,9 +47,21 @@ impl Default for CommanderEngineInternal {
         wasmtime_wasi::add_to_linker_async(&mut linker).unwrap();
         wasmtime_wasi_http::add_only_http_to_linker_async(&mut linker).unwrap();
         StreamingPlugin::add_to_linker_imports_get_host(&mut linker, get_host).unwrap();
-        crate::bindings::streaming::commander::base::inputs::add_to_linker_get_host(&mut linker, get_host).unwrap();
-        crate::bindings::streaming::commander::base::streaming_inputs::add_to_linker_get_host(&mut linker, get_host).unwrap();
-        crate::bindings::streaming::commander::base::streaming_outputs::add_to_linker_get_host(&mut linker, get_host).unwrap();
+        crate::bindings::streaming::commander::base::inputs::add_to_linker_get_host(
+            &mut linker,
+            get_host,
+        )
+        .unwrap();
+        crate::bindings::streaming::commander::base::streaming_inputs::add_to_linker_get_host(
+            &mut linker,
+            get_host,
+        )
+        .unwrap();
+        crate::bindings::streaming::commander::base::streaming_outputs::add_to_linker_get_host(
+            &mut linker,
+            get_host,
+        )
+        .unwrap();
 
         CommanderEngineInternal {
             wasm_engine: engine,

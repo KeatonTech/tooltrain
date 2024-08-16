@@ -181,7 +181,7 @@ impl CommanderWireFormatCoder for CommanderEnumDataType {
             .iter()
             .find(|v| v.ordinal == wire_format)
             .ok_or(anyhow!("Unknown enum variant {}", wire_format))
-            .map(|v| v.clone())
+            .cloned()
     }
 }
 

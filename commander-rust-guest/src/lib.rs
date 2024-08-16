@@ -1,5 +1,7 @@
 use commander::base::streaming_inputs::{ListChangeStream, TreeChangeStream, ValueChangeStream};
-use commander::base::streaming_outputs::{ListOutputRequest, ListOutputRequestStream, TreeOutputRequest, TreeOutputRequestStream};
+use commander::base::streaming_outputs::{
+    ListOutputRequest, ListOutputRequestStream, TreeOutputRequest, TreeOutputRequestStream,
+};
 use commander_data::CommanderCoder;
 use std::task::Poll;
 use tokio_stream::{once, Stream, StreamExt};

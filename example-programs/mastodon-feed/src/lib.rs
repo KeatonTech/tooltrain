@@ -23,9 +23,9 @@ impl Guest for MastodonFeedProgram {
                 name: "instance".to_string(),
                 description: "The Mastodon instance to fetch the public feed from".to_string(),
                 data_type: CommanderPathDataType {}.type_string(),
-                supports_updates: false
+                supports_updates: false,
             }],
-            performs_state_change: false
+            performs_state_change: false,
         }
     }
 

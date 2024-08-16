@@ -50,4 +50,3 @@ pub mod discrete {
 pub use streaming::commander::base::inputs;
 pub use streaming::commander::base::streaming_inputs;
 pub use streaming::commander::base::streaming_outputs;
-

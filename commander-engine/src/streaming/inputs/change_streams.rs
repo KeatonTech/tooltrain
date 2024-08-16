@@ -63,7 +63,8 @@ impl ReplacementChangeFromDataStreamSnapshot for Option<Vec<u8>> {
         data_type: &CommanderDataType,
     ) -> Result<Self, Error> {
         match snapshot {
-            DataStreamSnapshot::Value(maybe_value) => maybe_value.as_deref()
+            DataStreamSnapshot::Value(maybe_value) => maybe_value
+                .as_deref()
                 .map(|value| data_type.encode(value.clone()))
                 .transpose(),
             _ => Err(anyhow!(

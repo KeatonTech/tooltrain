@@ -212,7 +212,9 @@ impl<'a> Inputs<'a> {
     }
 
     pub fn get_handle(&self, input_name: &str) -> Option<InputHandle> {
-        self.handles().into_iter().find(|handle| handle.metadata().name == input_name)
+        self.handles()
+            .into_iter()
+            .find(|handle| handle.metadata().name == input_name)
     }
 
     pub fn new_value_input<ValueType>(
@@ -267,8 +269,7 @@ impl<'a> Inputs<'a> {
         name: String,
         description: String,
         data_type: CommanderListDataType,
-    ) -> Result<ListInputHandle<CommanderDataType>, Error>
-    {
+    ) -> Result<ListInputHandle<CommanderDataType>, Error> {
         let resource_id = self.0.add(
             name,
             description,
