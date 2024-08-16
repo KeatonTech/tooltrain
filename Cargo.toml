@@ -5,7 +5,6 @@ members = [
     "commander-engine",
     "host",
     "example-programs/mastodon-feed",
-    "commander-ui/src-tauri",
     "core-programs/ls",
     "core-programs/file-explorer", "commander-rust-guest",
 ]
