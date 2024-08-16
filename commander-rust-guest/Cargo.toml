@@ -6,6 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio-stream = "0.1.14"
-wit-bindgen = "0.21.0"
+tokio-stream = "0.1.15"
+wit-bindgen = "~0.30"
 commander-data = {path = "../commander-data"}

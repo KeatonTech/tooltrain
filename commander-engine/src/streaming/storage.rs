@@ -5,7 +5,6 @@ use crate::datastream::DataStream;
 use crate::streaming::inputs::storage::InputStreams;
 
 use anyhow::{anyhow, Error};
-use cap_std::fs::Dir;
 
 use commander_data::CommanderDataType;
 use derive_more::{IsVariant, TryInto, Unwrap};
@@ -184,15 +183,15 @@ impl WasmStorage {
             table: ResourceTable::new(),
             ctx: WasiCtxBuilder::new()
                 .preopened_dir(
-                    Dir::from_std_file(std::fs::File::open("/").unwrap()),
+                    "/",
+                    "/",
                     DirPerms::READ,
                     FilePerms::READ,
-                    "/",
-                )
+                ).unwrap()
                 .inherit_stdio()
                 .inherit_stderr()
                 .build(),
-            http_ctx: WasiHttpCtx,
+            http_ctx: WasiHttpCtx::new(),
             outputs: Default::default(),
             output_request_streams: Default::default(),
             inputs: Default::default(),

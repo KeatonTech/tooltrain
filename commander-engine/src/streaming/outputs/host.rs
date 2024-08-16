@@ -17,12 +17,13 @@ use async_trait::async_trait;
 use commander_data::CommanderCoder;
 use tokio_stream::{wrappers::BroadcastStream, StreamExt};
 use wasmtime::component::*;
+use wasmtime_wasi::WasiImpl;
 
 #[async_trait]
-impl HostValueOutput for WasmStorage {
+impl HostValueOutput for WasiImpl<&mut WasmStorage> {
     async fn set(&mut self, resource: Resource<ValueOutput>, value: Vec<u8>) -> Result<(), Error> {
-        let data_type = &self.outputs.get(resource.rep())?.metadata.data_type;
-        self.outputs
+        let data_type = &self.0.outputs.get(resource.rep())?.metadata.data_type;
+        self.0.outputs
             .get(resource.rep())
             .unwrap()
             .stream
@@ -36,7 +37,7 @@ impl HostValueOutput for WasmStorage {
     }
 
     fn drop(&mut self, resource: Resource<ValueOutput>) -> Result<(), Error> {
-        if self.outputs.remove(resource.rep())? {
+        if self.0.outputs.remove(resource.rep())? {
             Ok(())
         } else {
             Err(anyhow!("Could not destroy non-existent output"))
@@ -45,10 +46,10 @@ impl HostValueOutput for WasmStorage {
 }
 
 #[async_trait]
-impl HostListOutput for WasmStorage {
+impl HostListOutput for WasiImpl<&mut WasmStorage> {
     async fn add(&mut self, resource: Resource<ListOutput>, value: Vec<u8>) -> Result<(), Error> {
-        let data_type = &self.outputs.get(resource.rep())?.metadata.data_type;
-        self.outputs
+        let data_type = &self.0.outputs.get(resource.rep())?.metadata.data_type;
+        self.0.outputs
             .get(resource.rep())
             .unwrap()
             .stream
@@ -58,7 +59,7 @@ impl HostListOutput for WasmStorage {
     }
 
     async fn pop(&mut self, resource: Resource<ListOutput>) -> Result<(), Error> {
-        self.outputs
+        self.0.outputs
             .get(resource.rep())?
             .stream
             .write()
@@ -67,7 +68,7 @@ impl HostListOutput for WasmStorage {
     }
 
     async fn clear(&mut self, resource: Resource<ListOutput>) -> Result<(), Error> {
-        self.outputs
+        self.0.outputs
             .get(resource.rep())?
             .stream
             .write()
@@ -80,7 +81,7 @@ impl HostListOutput for WasmStorage {
         resource: Resource<ListOutput>,
         has_more_rows: bool,
     ) -> Result<(), Error> {
-        self.outputs
+        self.0.outputs
             .get(resource.rep())?
             .stream
             .write()
@@ -97,9 +98,9 @@ impl HostListOutput for WasmStorage {
         resource: Resource<ListOutput>,
     ) -> Result<Resource<ListOutputRequestStream>, Error> {
         Ok(Resource::new_own(
-            self.output_request_streams.list_request_streams.add_stream(
+            self.0.output_request_streams.list_request_streams.add_stream(
                 BroadcastStream::new(
-                    self.outputs
+                    self.0.outputs
                         .get(resource.rep())?
                         .stream
                         .read()
@@ -115,7 +116,7 @@ impl HostListOutput for WasmStorage {
     }
 
     fn drop(&mut self, resource: Resource<ListOutput>) -> Result<(), Error> {
-        if self.outputs.remove(resource.rep())? {
+        if self.0.outputs.remove(resource.rep())? {
             Ok(())
         } else {
             Err(anyhow!("Could not destroy non-existent output"))
@@ -124,14 +125,14 @@ impl HostListOutput for WasmStorage {
 }
 
 #[async_trait]
-impl HostTreeOutput for WasmStorage {
+impl HostTreeOutput for WasiImpl<&mut WasmStorage> {
     async fn add(
         &mut self,
         resource: Resource<TreeOutput>,
         parent: Option<String>,
         nodes: Vec<TreeNode>,
     ) -> Result<(), Error> {
-        self.outputs
+        self.0.outputs
             .get(resource.rep())?
             .stream
             .write()
@@ -144,7 +145,7 @@ impl HostTreeOutput for WasmStorage {
         resource: Resource<TreeOutput>,
         parent: String,
     ) -> Result<(), Error> {
-        self.outputs
+        self.0.outputs
             .get(resource.rep())?
             .stream
             .write()
@@ -153,7 +154,7 @@ impl HostTreeOutput for WasmStorage {
     }
 
     async fn clear(&mut self, resource: Resource<TreeOutput>) -> Result<(), Error> {
-        self.outputs
+        self.0.outputs
             .get(resource.rep())?
             .stream
             .write()
@@ -170,9 +171,9 @@ impl HostTreeOutput for WasmStorage {
         resource: Resource<TreeOutput>,
     ) -> Result<Resource<TreeOutputRequestStream>, Error> {
         Ok(Resource::new_own(
-            self.output_request_streams.tree_request_streams.add_stream(
+            self.0.output_request_streams.tree_request_streams.add_stream(
                 BroadcastStream::new(
-                    self.outputs
+                    self.0.outputs
                         .get(resource.rep())?
                         .stream
                         .write()
@@ -188,7 +189,7 @@ impl HostTreeOutput for WasmStorage {
     }
 
     fn drop(&mut self, resource: Resource<TreeOutput>) -> Result<(), Error> {
-        if self.outputs.remove(resource.rep())? {
+        if self.0.outputs.remove(resource.rep())? {
             Ok(())
         } else {
             Err(anyhow!("Could not destroy non-existent output"))
@@ -197,12 +198,12 @@ impl HostTreeOutput for WasmStorage {
 }
 
 #[async_trait]
-impl HostListOutputRequestStream for WasmStorage {
+impl HostListOutputRequestStream for WasiImpl<&mut WasmStorage> {
     async fn poll_request(
         &mut self,
         resource: Resource<ListOutputRequestStream>,
     ) -> Result<Option<ListOutputRequest>, Error> {
-        self.output_request_streams
+        self.0.output_request_streams
             .list_request_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("Output request stream not found"))?
@@ -213,7 +214,7 @@ impl HostListOutputRequestStream for WasmStorage {
         &mut self,
         resource: Resource<ListOutputRequestStream>,
     ) -> Result<ListOutputRequest, Error> {
-        self.output_request_streams
+        self.0.output_request_streams
             .list_request_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("Output request stream not found"))?
@@ -222,7 +223,7 @@ impl HostListOutputRequestStream for WasmStorage {
     }
 
     fn drop(&mut self, resource: Resource<ListOutputRequestStream>) -> Result<(), Error> {
-        if self
+        if self.0
             .output_request_streams
             .list_request_streams
             .remove(resource.rep())
@@ -237,12 +238,12 @@ impl HostListOutputRequestStream for WasmStorage {
 }
 
 #[async_trait]
-impl HostTreeOutputRequestStream for WasmStorage {
+impl HostTreeOutputRequestStream for WasiImpl<&mut WasmStorage> {
     async fn poll_request(
         &mut self,
         resource: Resource<TreeOutputRequestStream>,
     ) -> Result<Option<TreeOutputRequest>, Error> {
-        self.output_request_streams
+        self.0.output_request_streams
             .tree_request_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("Output request stream not found"))?
@@ -253,7 +254,7 @@ impl HostTreeOutputRequestStream for WasmStorage {
         &mut self,
         resource: Resource<TreeOutputRequestStream>,
     ) -> Result<TreeOutputRequest, Error> {
-        self.output_request_streams
+        self.0.output_request_streams
             .tree_request_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("Output request stream not found"))?
@@ -262,7 +263,7 @@ impl HostTreeOutputRequestStream for WasmStorage {
     }
 
     fn drop(&mut self, resource: Resource<TreeOutputRequestStream>) -> Result<(), Error> {
-        if self
+        if self.0
             .output_request_streams
             .list_request_streams
             .remove(resource.rep())

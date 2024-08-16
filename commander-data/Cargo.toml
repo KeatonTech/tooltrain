@@ -6,9 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.80"
-derive_more = { version = "0.99.17", features = ["try_into"] }
-flexbuffers = "2.0.0"
-pest = "2.7.8"
-pest_derive = "2.7.8"
-serde = { version = "1.0.197", features = ["derive"] }
+anyhow = "~1"
+derive_more = { version = "~1", features = ["deref","from","is_variant","unwrap","try_into"] }
+flexbuffers = "~2"
+pest = "~2.7"
+pest_derive = "~2.7"
+serde = { version = "~1", features = ["derive"] }

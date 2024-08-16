@@ -7,6 +7,7 @@ use tokio_stream::{once, Stream, StreamExt};
 wit_bindgen::generate!({
     path: "../wit",
     world: "streaming-plugin",
+    generate_all,
 });
 
 pub use commander::base::streaming_inputs::{ListChange, TreeChange};

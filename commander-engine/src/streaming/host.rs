@@ -15,9 +15,10 @@ use async_trait::async_trait;
 use commander_data::{parse, CommanderCoder};
 use parking_lot::RwLock;
 use wasmtime::component::*;
+use wasmtime_wasi::WasiImpl;
 
 #[async_trait]
-impl StreamingPluginImports for WasmStorage {
+impl StreamingPluginImports for WasiImpl<&mut WasmStorage> {
     async fn add_value_output(
         &mut self,
         name: String,
@@ -32,7 +33,7 @@ impl StreamingPluginImports for WasmStorage {
             None
         };
 
-        Ok(Resource::new_own(self.outputs.add(
+        Ok(Resource::new_own(self.0.outputs.add(
             name,
             description,
             commander_data_type,
@@ -48,7 +49,7 @@ impl StreamingPluginImports for WasmStorage {
         description: String,
         data_type: String,
     ) -> Result<Resource<ListOutput>, Error> {
-        Ok(Resource::new_own(self.outputs.add(
+        Ok(Resource::new_own(self.0.outputs.add(
             name,
             description,
             parse(&data_type)?,
@@ -62,7 +63,7 @@ impl StreamingPluginImports for WasmStorage {
         description: String,
         data_type: String,
     ) -> Result<Resource<TreeOutput>, Error> {
-        Ok(Resource::new_own(self.outputs.add(
+        Ok(Resource::new_own(self.0.outputs.add(
             name,
             description,
             parse(&data_type)?,
@@ -84,7 +85,7 @@ impl StreamingPluginImports for WasmStorage {
             None
         };
 
-        Ok(Resource::new_own(self.inputs.add(
+        Ok(Resource::new_own(self.0.inputs.add(
             name,
             description,
             commander_data_type,
@@ -100,7 +101,7 @@ impl StreamingPluginImports for WasmStorage {
         description: String,
         data_type: String,
     ) -> Result<Resource<ListInput>, Error> {
-        Ok(Resource::new_own(self.inputs.add(
+        Ok(Resource::new_own(self.0.inputs.add(
             name,
             description,
             parse(&data_type)?,
@@ -114,7 +115,7 @@ impl StreamingPluginImports for WasmStorage {
         description: String,
         data_type: String,
     ) -> Result<Resource<TreeInput>, Error> {
-        Ok(Resource::new_own(self.inputs.add(
+        Ok(Resource::new_own(self.0.inputs.add(
             name,
             description,
             parse(&data_type)?,
@@ -123,6 +124,6 @@ impl StreamingPluginImports for WasmStorage {
     }
 }
 
-impl crate::bindings::streaming::commander::base::inputs::Host for WasmStorage {}
-impl crate::bindings::streaming::commander::base::streaming_inputs::Host for WasmStorage {}
-impl crate::bindings::streaming::commander::base::streaming_outputs::Host for WasmStorage {}
+impl crate::bindings::streaming::commander::base::inputs::Host for WasiImpl<&mut WasmStorage> {}
+impl crate::bindings::streaming::commander::base::streaming_inputs::Host for WasiImpl<&mut WasmStorage> {}
+impl crate::bindings::streaming::commander::base::streaming_outputs::Host for WasiImpl<&mut WasmStorage> {}

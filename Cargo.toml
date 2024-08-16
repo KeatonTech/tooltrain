@@ -10,3 +10,4 @@ members = [
     "core-programs/file-explorer", "commander-rust-guest",
 ]
 exclude = ["program_template"]
+resolver = "2"

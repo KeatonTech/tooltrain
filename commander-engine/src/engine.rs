@@ -15,15 +15,14 @@ use wasmtime::{
     component::{Component, Linker},
     Config, Engine, Store,
 };
+use wasmtime_wasi::WasiImpl;
 
 use crate::{
     bindings::{
         inputs::{self, ArgumentSpec, Schema},
         streaming::{Input, StreamingPlugin},
     },
-    streaming::{
-        DataStreamStorage, Inputs, OutputRef, Outputs, WasmStorage,
-    },
+    streaming::{DataStreamStorage, Inputs, OutputRef, Outputs, WasmStorage},
 };
 
 struct CommanderEngineInternal {
@@ -40,12 +39,17 @@ impl Default for CommanderEngineInternal {
         )
         .unwrap();
 
+        fn get_host(storage: &mut WasmStorage) -> WasiImpl<&mut WasmStorage> {
+            WasiImpl(storage)
+        }
+
         let mut linker: Linker<WasmStorage> = Linker::new(&engine);
-        wasmtime_wasi::command::add_to_linker(&mut linker).unwrap();
-        wasmtime_wasi_http::bindings::http::types::add_to_linker(&mut linker, |c| c).unwrap();
-        wasmtime_wasi_http::bindings::http::outgoing_handler::add_to_linker(&mut linker, |c| c)
-            .unwrap();
-        StreamingPlugin::add_to_linker(&mut linker, |w| w).unwrap();
+        wasmtime_wasi::add_to_linker_async(&mut linker).unwrap();
+        wasmtime_wasi_http::add_only_http_to_linker_async(&mut linker).unwrap();
+        StreamingPlugin::add_to_linker_imports_get_host(&mut linker, get_host).unwrap();
+        crate::bindings::streaming::commander::base::inputs::add_to_linker_get_host(&mut linker, get_host).unwrap();
+        crate::bindings::streaming::commander::base::streaming_inputs::add_to_linker_get_host(&mut linker, get_host).unwrap();
+        crate::bindings::streaming::commander::base::streaming_outputs::add_to_linker_get_host(&mut linker, get_host).unwrap();
 
         CommanderEngineInternal {
             wasm_engine: engine,
@@ -108,7 +112,7 @@ impl CommanderStreamingProgram {
 
     async fn load_instance(&mut self) -> Result<(Store<WasmStorage>, StreamingPlugin), Error> {
         let mut store = Store::new(&self.engine.wasm_engine, WasmStorage::new());
-        let (plugin, _) =
+        let plugin =
             StreamingPlugin::instantiate_async(&mut store, &self.component, &self.engine.linker)
                 .await?;
         Ok((store, plugin))
@@ -163,9 +167,14 @@ impl StreamingRunBuilder {
     {
         let inputs = Inputs(&self.store.data().inputs);
         let data_type = commander_data::parse(&argument.data_type)?;
-        let input_handle =
-            inputs.bind_input(argument.name.clone(), argument.description.clone(), data_type, to_output)?;
-        self.inputs.insert(argument.name.clone(), input_handle.as_input_binding());
+        let input_handle = inputs.bind_input(
+            argument.name.clone(),
+            argument.description.clone(),
+            data_type,
+            to_output,
+        )?;
+        self.inputs
+            .insert(argument.name.clone(), input_handle.as_input_binding());
         Ok(self)
     }
 
@@ -187,7 +196,8 @@ impl StreamingRunBuilder {
             data_type,
             Some(initial_value.into()),
         )?;
-        self.inputs.insert(argument.name.clone(), input_handle.as_input_binding());
+        self.inputs
+            .insert(argument.name.clone(), input_handle.as_input_binding());
         Ok(self)
     }
 

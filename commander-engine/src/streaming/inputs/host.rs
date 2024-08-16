@@ -4,6 +4,7 @@ use commander_data::{CommanderCoder, CommanderDataType, CommanderValue};
 use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
 use wasmtime::component::Resource;
+use wasmtime_wasi::WasiImpl;
 
 use crate::bindings::streaming::{ListInput, TreeInput};
 use crate::bindings::streaming_inputs::{
@@ -16,9 +17,9 @@ use crate::streaming::storage::DataStreamResourceChange;
 use crate::streaming::WasmStorage;
 
 #[async_trait]
-impl HostValueInput for WasmStorage {
+impl HostValueInput for WasiImpl<&mut WasmStorage> {
     async fn get(&mut self, resource: Resource<ValueInput>) -> Result<Option<Vec<u8>>, Error> {
-        let data_stream_resource = self.inputs.get(resource.rep())?;
+        let data_stream_resource = self.0.inputs.get(resource.rep())?;
         let data_type = &data_stream_resource.metadata.data_type;
         let result = {
             let stream = data_stream_resource.stream.read();
@@ -35,11 +36,11 @@ impl HostValueInput for WasmStorage {
         &mut self,
         resource: Resource<ValueInput>,
     ) -> Result<Resource<ValueChangeStream>, Error> {
-        let data_stream_resource = self.inputs.get(resource.rep())?;
+        let data_stream_resource = self.0.inputs.get(resource.rep())?;
         let data_type = data_stream_resource.metadata.data_type.clone();
         let resource_rep = resource.rep();
 
-        let data_stream_change_stream = BroadcastStream::new(self.inputs.changes())
+        let data_stream_change_stream = BroadcastStream::new(self.0.inputs.changes())
             .map_while(|result| result.ok())
             .filter(|change| change.is_data_stream_changed())
             .filter(move |change| {
@@ -64,7 +65,7 @@ impl HostValueInput for WasmStorage {
         });
 
         Ok(Resource::new_own(
-            self.input_streams.value_streams.add_stream(
+            self.0.input_streams.value_streams.add_stream(
                 resource_rep,
                 value_stream,
                 data_stream_change_stream,
@@ -77,7 +78,7 @@ impl HostValueInput for WasmStorage {
     }
 
     fn drop(&mut self, resource: Resource<ValueInput>) -> Result<(), Error> {
-        if self.inputs.remove(resource.rep())? {
+        if self.0.inputs.remove(resource.rep())? {
             Ok(())
         } else {
             Err(anyhow!("Could not destroy non-existent input"))
@@ -86,9 +87,9 @@ impl HostValueInput for WasmStorage {
 }
 
 #[async_trait]
-impl HostListInput for WasmStorage {
+impl HostListInput for WasiImpl<&mut WasmStorage> {
     async fn get(&mut self, resource: Resource<ListInput>) -> Result<Vec<u8>, Error> {
-        let data_stream_resource = self.inputs.get(resource.rep())?;
+        let data_stream_resource = self.0.inputs.get(resource.rep())?;
         let data_type = &data_stream_resource.metadata.data_type;
         let CommanderDataType::List(list_data_type) = data_type else {
             return Err(anyhow!(
@@ -112,7 +113,7 @@ impl HostListInput for WasmStorage {
         resource: Resource<ListInput>,
         limit: u32,
     ) -> Result<(), Error> {
-        self.inputs
+        self.0.inputs
             .get(resource.rep())?
             .stream
             .write()
@@ -125,11 +126,11 @@ impl HostListInput for WasmStorage {
         &mut self,
         resource: Resource<ListInput>,
     ) -> Result<Resource<ListChangeStream>, Error> {
-        let data_stream_resource = self.inputs.get(resource.rep())?;
+        let data_stream_resource = self.0.inputs.get(resource.rep())?;
         let data_type = data_stream_resource.metadata.data_type.clone();
         let resource_rep = resource.rep();
 
-        let data_stream_change_stream = BroadcastStream::new(self.inputs.changes())
+        let data_stream_change_stream = BroadcastStream::new(self.0.inputs.changes())
             .map_while(|result| result.ok())
             .filter(|change| change.is_data_stream_changed())
             .filter(move |change| {
@@ -161,7 +162,7 @@ impl HostListInput for WasmStorage {
         );
 
         Ok(Resource::new_own(
-            self.input_streams.list_streams.add_stream(
+            self.0.input_streams.list_streams.add_stream(
                 resource.rep(),
                 list_change_stream,
                 data_stream_change_stream,
@@ -174,7 +175,7 @@ impl HostListInput for WasmStorage {
     }
 
     fn drop(&mut self, resource: Resource<ListInput>) -> Result<(), Error> {
-        if self.inputs.remove(resource.rep())? {
+        if self.0.inputs.remove(resource.rep())? {
             Ok(())
         } else {
             Err(anyhow!("Could not destroy non-existent input"))
@@ -183,9 +184,9 @@ impl HostListInput for WasmStorage {
 }
 
 #[async_trait]
-impl HostTreeInput for WasmStorage {
+impl HostTreeInput for WasiImpl<&mut WasmStorage> {
     async fn get(&mut self, resource: Resource<TreeInput>) -> Result<Vec<TreeNode>, Error> {
-        Ok(self
+        Ok(self.0
             .inputs
             .get(resource.rep())?
             .stream
@@ -202,7 +203,7 @@ impl HostTreeInput for WasmStorage {
         resource: Resource<TreeInput>,
         of_parent: String,
     ) -> Result<(), Error> {
-        self.inputs
+        self.0.inputs
             .get(resource.rep())?
             .stream
             .write()
@@ -215,10 +216,10 @@ impl HostTreeInput for WasmStorage {
         &mut self,
         resource: Resource<TreeInput>,
     ) -> Result<Resource<TreeChangeStream>, Error> {
-        let data_stream_resource = self.inputs.get(resource.rep())?;
+        let data_stream_resource = self.0.inputs.get(resource.rep())?;
         let resource_rep = resource.rep();
 
-        let data_stream_change_stream = BroadcastStream::new(self.inputs.changes())
+        let data_stream_change_stream = BroadcastStream::new(self.0.inputs.changes())
             .map_while(|result| result.ok())
             .filter(|change| change.is_data_stream_changed())
             .filter(move |change| {
@@ -250,7 +251,7 @@ impl HostTreeInput for WasmStorage {
         );
 
         Ok(Resource::new_own(
-            self.input_streams.tree_streams.add_stream(
+            self.0.input_streams.tree_streams.add_stream(
                 resource.rep(),
                 tree_change_stream,
                 data_stream_change_stream,
@@ -263,7 +264,7 @@ impl HostTreeInput for WasmStorage {
     }
 
     fn drop(&mut self, resource: Resource<TreeInput>) -> Result<(), Error> {
-        if self.inputs.remove(resource.rep())? {
+        if self.0.inputs.remove(resource.rep())? {
             Ok(())
         } else {
             Err(anyhow!("Could not destroy non-existent input"))
@@ -272,12 +273,12 @@ impl HostTreeInput for WasmStorage {
 }
 
 #[async_trait]
-impl HostValueChangeStream for WasmStorage {
+impl HostValueChangeStream for WasiImpl<&mut WasmStorage> {
     async fn poll_change(
         &mut self,
         resource: Resource<ValueChangeStream>,
     ) -> Result<Option<Option<Vec<u8>>>, Error> {
-        self.input_streams
+        self.0.input_streams
             .value_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("Value change stream not found"))?
@@ -288,16 +289,16 @@ impl HostValueChangeStream for WasmStorage {
         &mut self,
         resource: Resource<ValueChangeStream>,
     ) -> Result<Option<Vec<u8>>, Error> {
-        self.input_streams
+        self.0.input_streams
             .value_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("Value change stream not found"))?
-            .poll_change_blocking(self.inputs.clone())
+            .poll_change_blocking(self.0.inputs.clone())
             .await
     }
 
     fn drop(&mut self, resource: Resource<ValueChangeStream>) -> Result<(), Error> {
-        if self.input_streams.value_streams.remove(resource.rep()) {
+        if self.0.input_streams.value_streams.remove(resource.rep()) {
             Ok(())
         } else {
             Err(anyhow!("Could not destroy non-existent input"))
@@ -306,12 +307,12 @@ impl HostValueChangeStream for WasmStorage {
 }
 
 #[async_trait]
-impl HostListChangeStream for WasmStorage {
+impl HostListChangeStream for WasiImpl<&mut WasmStorage> {
     async fn poll_change(
         &mut self,
         resource: Resource<ListChangeStream>,
     ) -> Result<Option<ListChange>, Error> {
-        self.input_streams
+        self.0.input_streams
             .list_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("List change stream not found"))?
@@ -322,16 +323,16 @@ impl HostListChangeStream for WasmStorage {
         &mut self,
         resource: Resource<ListChangeStream>,
     ) -> Result<ListChange, Error> {
-        self.input_streams
+        self.0.input_streams
             .list_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("List change stream not found"))?
-            .poll_change_blocking(self.inputs.clone())
+            .poll_change_blocking(self.0.inputs.clone())
             .await
     }
 
     fn drop(&mut self, resource: Resource<ListChangeStream>) -> Result<(), Error> {
-        if self.input_streams.list_streams.remove(resource.rep()) {
+        if self.0.input_streams.list_streams.remove(resource.rep()) {
             Ok(())
         } else {
             Err(anyhow!("Could not destroy non-existent input"))
@@ -340,12 +341,12 @@ impl HostListChangeStream for WasmStorage {
 }
 
 #[async_trait]
-impl HostTreeChangeStream for WasmStorage {
+impl HostTreeChangeStream for WasiImpl<&mut WasmStorage> {
     async fn poll_change(
         &mut self,
         resource: Resource<TreeChangeStream>,
     ) -> Result<Option<TreeChange>, Error> {
-        self.input_streams
+        self.0.input_streams
             .tree_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("Tree change stream not found"))?
@@ -356,16 +357,16 @@ impl HostTreeChangeStream for WasmStorage {
         &mut self,
         resource: Resource<TreeChangeStream>,
     ) -> Result<TreeChange, Error> {
-        self.input_streams
+        self.0.input_streams
             .tree_streams
             .get_mut(resource.rep())
             .ok_or_else(|| anyhow!("Tree change stream not found"))?
-            .poll_change_blocking(self.inputs.clone())
+            .poll_change_blocking(self.0.inputs.clone())
             .await
     }
 
     fn drop(&mut self, resource: Resource<TreeChangeStream>) -> Result<(), Error> {
-        if self.input_streams.tree_streams.remove(resource.rep()) {
+        if self.0.input_streams.tree_streams.remove(resource.rep()) {
             Ok(())
         } else {
             Err(anyhow!("Could not destroy non-existent input"))

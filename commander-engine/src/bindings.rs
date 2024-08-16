@@ -7,6 +7,7 @@ pub mod streaming {
         world: "streaming-plugin",
         path: "../wit",
         async: true,
+        trappable_imports: true,
         with: {
             "wasi:io/error": bindings::io::error,
             "wasi:io/poll": bindings::io::poll,
@@ -30,6 +31,7 @@ pub mod discrete {
         world: "discrete-plugin",
         path: "../wit",
         async: true,
+        trappable_imports: true,
         with: {
             "commander:base/inputs": super::streaming::commander::base::inputs,
             "wasi:io/error": bindings::io::error,

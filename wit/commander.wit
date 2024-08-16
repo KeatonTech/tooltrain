@@ -135,9 +135,9 @@ interface streaming-inputs {
 
 /** Interface for plugins that can accept and/or output streams of data during a single run. */
 world streaming-plugin {
-    import wasi:filesystem/preopens@0.2.0;
-    import wasi:filesystem/types@0.2.0;
-    import wasi:http/outgoing-handler@0.2.0;
+    import wasi:filesystem/preopens@0.2.1;
+    import wasi:filesystem/types@0.2.1;
+    import wasi:http/outgoing-handler@0.2.1;
 
     use inputs.{schema};
     use streaming-inputs.{input, value-input, list-input, tree-input};
@@ -197,9 +197,9 @@ interface discrete-outputs {
 
 /** Interface for plugins that operate on a static input and produce a static output. */
 world discrete-plugin {
-    import wasi:filesystem/preopens@0.2.0;
-    import wasi:filesystem/types@0.2.0;
-    import wasi:http/outgoing-handler@0.2.0;
+    import wasi:filesystem/preopens@0.2.1;
+    import wasi:filesystem/types@0.2.1;
+    import wasi:http/outgoing-handler@0.2.1;
 
     use inputs.{schema};
     use discrete-outputs.{output};
