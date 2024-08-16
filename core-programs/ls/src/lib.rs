@@ -1,10 +1,10 @@
-use commander_data::{
+use tooltrain_data::{
     CommanderCoder, CommanderEnumDataType, CommanderNumberDataType, CommanderPathDataType,
     CommanderStringDataType, CommanderStructDataType, CommanderStructTypeBuilder, CommanderValue,
 };
-use commander_rust_guest::{
+use tooltrain_rust_guest::{
     add_list_output,
-    commander::base::{inputs::ArgumentSpec, streaming_inputs::Input},
+    tooltrain::base::{inputs::ArgumentSpec, streaming_inputs::Input},
     export_guest,
     wasi::{
         self,
@@ -45,7 +45,7 @@ enum FileEntityType {
 }
 
 impl FileEntityType {
-    fn to_commander_value(&self) -> CommanderValue {
+    fn to_tooltrain_value(&self) -> CommanderValue {
         match self {
             FileEntityType::File => FILE_ENTITY_TYPE.get_variant("FILE").unwrap().into(),
             FileEntityType::Directory => FILE_ENTITY_TYPE.get_variant("DIRECTORY").unwrap().into(),
@@ -142,10 +142,10 @@ impl ListProgram {
 
     fn file_stat_to_type_enum(stat: &DescriptorStat) -> CommanderValue {
         match stat.type_ {
-            DescriptorType::RegularFile => FileEntityType::File.to_commander_value(),
-            DescriptorType::Directory => FileEntityType::Directory.to_commander_value(),
-            DescriptorType::SymbolicLink => FileEntityType::Symlink.to_commander_value(),
-            _ => FileEntityType::Other.to_commander_value(),
+            DescriptorType::RegularFile => FileEntityType::File.to_tooltrain_value(),
+            DescriptorType::Directory => FileEntityType::Directory.to_tooltrain_value(),
+            DescriptorType::SymbolicLink => FileEntityType::Symlink.to_tooltrain_value(),
+            _ => FileEntityType::Other.to_tooltrain_value(),
         }
     }
 }

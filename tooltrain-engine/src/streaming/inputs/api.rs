@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, marker::PhantomData, sync::Arc};
 
-use commander_data::{
+use tooltrain_data::{
     CommanderCoder, CommanderDataType, CommanderListDataType, CommanderTypedListDataType,
     CommanderValue,
 };

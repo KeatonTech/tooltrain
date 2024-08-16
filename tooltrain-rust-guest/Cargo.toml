@@ -1,5 +1,5 @@
 [package]
-name = "commander-rust-guest"
+name = "tooltrain-rust-guest"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,4 +8,4 @@ edition = "2021"
 [dependencies]
 tokio-stream = "0.1.15"
 wit-bindgen = "~0.30"
-commander-data = {path = "../commander-data"}
+tooltrain-data = {path = "../tooltrain-data"}

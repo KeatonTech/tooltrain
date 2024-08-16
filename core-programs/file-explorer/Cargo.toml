@@ -8,11 +8,11 @@ crate-type = ["cdylib"]
 
 [dependencies]
 anyhow = "1.0.80"
-commander-data = {path = "../../commander-data"}
-commander-rust-guest = {path = "../../commander-rust-guest"}
+tooltrain-data = {path = "../../tooltrain-data"}
+tooltrain-rust-guest = {path = "../../tooltrain-rust-guest"}
 parking_lot ={version =  "0.12.1", features = ["send_guard"]}
 tokio = { version = "1.36.0", features = ["parking_lot","rt", "sync"] }
 tokio-stream = { version = "0.1.14" }
 
 [package.metadata.component]
-package = "commander:base"
+package = "tooltrain:base"

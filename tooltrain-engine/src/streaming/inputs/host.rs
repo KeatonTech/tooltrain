@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use commander_data::{CommanderCoder, CommanderDataType, CommanderValue};
+use tooltrain_data::{CommanderCoder, CommanderDataType, CommanderValue};
 use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
 use wasmtime::component::Resource;
@@ -26,7 +26,7 @@ impl HostValueInput for WasiImpl<&mut WasmStorage> {
             stream
                 .try_get_value()?
                 .snapshot()
-                .map(|commander_value| data_type.encode((*commander_value).clone()))
+                .map(|tooltrain_value| data_type.encode((*tooltrain_value).clone()))
                 .transpose()
         };
         return result;

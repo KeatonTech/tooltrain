@@ -1,8 +1,8 @@
 use std::{path::PathBuf, str::FromStr};
 
 use anyhow::{anyhow, Error};
-use commander_data::CommanderPathDataType;
-use commander_engine::{
+use tooltrain_data::CommanderPathDataType;
+use tooltrain_engine::{
     streaming::{OutputChange, OutputHandle, Outputs, TreeOutputHandle},
     CommanderEngine, CommanderStreamingProgramRun, ProgramSource,
 };
@@ -14,7 +14,7 @@ use tokio_util::io::ReaderStream;
 async fn main() -> Result<(), Error> {
     let engine = CommanderEngine::new();
     let file_explorer_program_source = ProgramSource::FilePath(
-        std::path::Path::new("/Users/keatonbrandt/Documents/Development/Rust/commander/target/wasm32-wasip1/debug/file_explorer.wasm").to_owned(),
+        std::path::Path::new("/Users/keatonbrandt/Documents/Development/Rust/tooltrain/target/wasm32-wasip1/debug/file_explorer.wasm").to_owned(),
     );
     let mut file_explorer_program = engine.open_program(file_explorer_program_source).await?;
     let mut run = file_explorer_program

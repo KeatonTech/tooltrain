@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Error;
-use commander_data::CommanderValue;
+use tooltrain_data::CommanderValue;
 use tokio::sync::broadcast;
 
 #[derive(Clone, Debug)]

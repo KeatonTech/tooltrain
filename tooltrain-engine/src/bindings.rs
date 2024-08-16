@@ -33,7 +33,7 @@ pub mod discrete {
         async: true,
         trappable_imports: true,
         with: {
-            "commander:base/inputs": super::streaming::commander::base::inputs,
+            "tooltrain:base/inputs": super::streaming::tooltrain::base::inputs,
             "wasi:io/error": bindings::io::error,
             "wasi:io/poll": bindings::io::poll,
             "wasi:io/streams": bindings::io::streams,
@@ -47,6 +47,6 @@ pub mod discrete {
     });
 }
 
-pub use streaming::commander::base::inputs;
-pub use streaming::commander::base::streaming_inputs;
-pub use streaming::commander::base::streaming_outputs;
+pub use streaming::tooltrain::base::inputs;
+pub use streaming::tooltrain::base::streaming_inputs;
+pub use streaming::tooltrain::base::streaming_outputs;

@@ -1,12 +1,12 @@
 [workspace]
 
 members = [
-    "commander-data",
-    "commander-engine",
+    "tooltrain-data",
+    "tooltrain-engine",
     "host",
     "example-programs/mastodon-feed",
     "core-programs/ls",
-    "core-programs/file-explorer", "commander-rust-guest",
+    "core-programs/file-explorer", "tooltrain-rust-guest",
 ]
 exclude = ["program_template"]
 resolver = "2"

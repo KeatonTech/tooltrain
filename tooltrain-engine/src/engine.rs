@@ -7,7 +7,7 @@ use std::{
 
 use anyhow::{anyhow, Error};
 
-use commander_data::{CommanderCoder, CommanderDataType, CommanderValue};
+use tooltrain_data::{CommanderCoder, CommanderDataType, CommanderValue};
 
 use tokio::sync::watch;
 
@@ -47,17 +47,17 @@ impl Default for CommanderEngineInternal {
         wasmtime_wasi::add_to_linker_async(&mut linker).unwrap();
         wasmtime_wasi_http::add_only_http_to_linker_async(&mut linker).unwrap();
         StreamingPlugin::add_to_linker_imports_get_host(&mut linker, get_host).unwrap();
-        crate::bindings::streaming::commander::base::inputs::add_to_linker_get_host(
+        crate::bindings::streaming::tooltrain::base::inputs::add_to_linker_get_host(
             &mut linker,
             get_host,
         )
         .unwrap();
-        crate::bindings::streaming::commander::base::streaming_inputs::add_to_linker_get_host(
+        crate::bindings::streaming::tooltrain::base::streaming_inputs::add_to_linker_get_host(
             &mut linker,
             get_host,
         )
         .unwrap();
-        crate::bindings::streaming::commander::base::streaming_outputs::add_to_linker_get_host(
+        crate::bindings::streaming::tooltrain::base::streaming_outputs::add_to_linker_get_host(
             &mut linker,
             get_host,
         )
@@ -178,7 +178,7 @@ impl StreamingRunBuilder {
         ValueType::Value: Into<CommanderValue>,
     {
         let inputs = Inputs(&self.store.data().inputs);
-        let data_type = commander_data::parse(&argument.data_type)?;
+        let data_type = tooltrain_data::parse(&argument.data_type)?;
         let input_handle = inputs.bind_input(
             argument.name.clone(),
             argument.description.clone(),
@@ -201,7 +201,7 @@ impl StreamingRunBuilder {
         ValueType::Value: Into<CommanderValue>,
     {
         let inputs = Inputs(&self.store.data().inputs);
-        let data_type = commander_data::parse(&argument.data_type)?;
+        let data_type = tooltrain_data::parse(&argument.data_type)?;
         let input_handle = inputs.new_value_input(
             argument.name.clone(),
             argument.description.clone(),
@@ -240,7 +240,7 @@ impl StreamingRunBuilder {
                 if let Some(configured_input) = maybe_configured_input {
                     Ok(configured_input)
                 } else {
-                    let data_type = commander_data::parse(&arg_spec.data_type)?;
+                    let data_type = tooltrain_data::parse(&arg_spec.data_type)?;
                     Ok(match data_type {
                         CommanderDataType::List(l) => Inputs(&input_storage_clone)
                             .new_generic_list_input(arg_spec.name, arg_spec.description, l)?

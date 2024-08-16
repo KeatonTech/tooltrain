@@ -6,7 +6,7 @@ use crate::streaming::inputs::storage::InputStreams;
 
 use anyhow::{anyhow, Error};
 
-use commander_data::CommanderDataType;
+use tooltrain_data::CommanderDataType;
 use derive_more::{IsVariant, TryInto, Unwrap};
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
 use tokio::sync::broadcast::{channel, Receiver, Sender};

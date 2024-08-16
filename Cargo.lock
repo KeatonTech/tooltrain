@@ -232,46 +232,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67ba02a97a2bd10f4b59b25c7973101c79642302776489e030cd13cdab09ed15"
 
 [[package]]
-name = "commander-data"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "derive_more",
- "flexbuffers",
- "pest",
- "pest_derive",
- "serde",
-]
-
-[[package]]
-name = "commander-engine"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "cap-std",
- "commander-data",
- "derive_more",
- "futures",
- "lazy_static",
- "parking_lot",
- "tokio",
- "tokio-stream",
- "wasmtime",
- "wasmtime-wasi",
- "wasmtime-wasi-http",
-]
-
-[[package]]
-name = "commander-rust-guest"
-version = "0.1.0"
-dependencies = [
- "commander-data",
- "tokio-stream",
- "wit-bindgen",
-]
-
-[[package]]
 name = "convert_case"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -610,11 +570,11 @@ name = "file-explorer"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "commander-data",
- "commander-rust-guest",
  "parking_lot",
  "tokio",
  "tokio-stream",
+ "tooltrain-data",
+ "tooltrain-rust-guest",
 ]
 
 [[package]]
@@ -860,11 +820,11 @@ name = "host"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "commander-data",
- "commander-engine",
  "tokio",
  "tokio-stream",
  "tokio-util",
+ "tooltrain-data",
+ "tooltrain-engine",
 ]
 
 [[package]]
@@ -1111,10 +1071,10 @@ checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
 name = "ls"
 version = "0.1.0"
 dependencies = [
- "commander-data",
- "commander-rust-guest",
  "maplit",
  "once_cell",
+ "tooltrain-data",
+ "tooltrain-rust-guest",
 ]
 
 [[package]]
@@ -1136,11 +1096,11 @@ checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 name = "mastodon-feed"
 version = "0.1.0"
 dependencies = [
- "commander-data",
- "commander-rust-guest",
  "lazy_static",
  "serde",
  "serde_json",
+ "tooltrain-data",
+ "tooltrain-rust-guest",
 ]
 
 [[package]]
@@ -1905,6 +1865,46 @@ dependencies = [
  "serde_spanned",
  "toml_datetime",
  "winnow 0.6.2",
+]
+
+[[package]]
+name = "tooltrain-data"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "derive_more",
+ "flexbuffers",
+ "pest",
+ "pest_derive",
+ "serde",
+]
+
+[[package]]
+name = "tooltrain-engine"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "cap-std",
+ "derive_more",
+ "futures",
+ "lazy_static",
+ "parking_lot",
+ "tokio",
+ "tokio-stream",
+ "tooltrain-data",
+ "wasmtime",
+ "wasmtime-wasi",
+ "wasmtime-wasi-http",
+]
+
+[[package]]
+name = "tooltrain-rust-guest"
+version = "0.1.0"
+dependencies = [
+ "tokio-stream",
+ "tooltrain-data",
+ "wit-bindgen",
 ]
 
 [[package]]

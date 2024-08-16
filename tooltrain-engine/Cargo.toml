@@ -1,5 +1,5 @@
 [package]
-name = "commander-engine"
+name = "tooltrain-engine"
 version = "0.1.0"
 edition = "2021"
 
@@ -16,7 +16,7 @@ tokio-stream = { version = "~0.1", features = ["sync"] }
 wasmtime = { version = "~23", features = ["component-model", "async"] }
 wasmtime-wasi = "~23"
 wasmtime-wasi-http = "~23"
-commander-data = { path = "../commander-data" }
+tooltrain-data = { path = "../tooltrain-data" }
 derive_more = { version = "~1", features = [
     "try_into",
     "is_variant",

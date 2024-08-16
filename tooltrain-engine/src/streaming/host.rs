@@ -12,7 +12,7 @@ use crate::{
 use anyhow::Error;
 use async_trait::async_trait;
 
-use commander_data::{parse, CommanderCoder};
+use tooltrain_data::{parse, CommanderCoder};
 use parking_lot::RwLock;
 use wasmtime::component::*;
 use wasmtime_wasi::WasiImpl;
@@ -26,9 +26,9 @@ impl StreamingPluginImports for WasiImpl<&mut WasmStorage> {
         data_type: String,
         initial_value: Option<Vec<u8>>,
     ) -> Result<Resource<ValueOutput>, Error> {
-        let commander_data_type = parse(&data_type)?;
+        let tooltrain_data_type = parse(&data_type)?;
         let decoded_initial_value = if let Some(bytes) = initial_value {
-            Some(commander_data_type.decode(&bytes)?)
+            Some(tooltrain_data_type.decode(&bytes)?)
         } else {
             None
         };
@@ -36,7 +36,7 @@ impl StreamingPluginImports for WasiImpl<&mut WasmStorage> {
         Ok(Resource::new_own(self.0.outputs.add(
             name,
             description,
-            commander_data_type,
+            tooltrain_data_type,
             Arc::new(RwLock::new(DataStream::Value(ValueStream::new(
                 decoded_initial_value,
             )))),
@@ -78,9 +78,9 @@ impl StreamingPluginImports for WasiImpl<&mut WasmStorage> {
         data_type: String,
         initial_value: Option<Vec<u8>>,
     ) -> Result<Resource<ValueInput>, Error> {
-        let commander_data_type = parse(&data_type)?;
+        let tooltrain_data_type = parse(&data_type)?;
         let decoded_initial_value = if let Some(bytes) = initial_value {
-            Some(commander_data_type.decode(&bytes)?)
+            Some(tooltrain_data_type.decode(&bytes)?)
         } else {
             None
         };
@@ -88,7 +88,7 @@ impl StreamingPluginImports for WasiImpl<&mut WasmStorage> {
         Ok(Resource::new_own(self.0.inputs.add(
             name,
             description,
-            commander_data_type,
+            tooltrain_data_type,
             Arc::new(RwLock::new(DataStream::Value(ValueStream::new(
                 decoded_initial_value,
             )))),
@@ -124,12 +124,12 @@ impl StreamingPluginImports for WasiImpl<&mut WasmStorage> {
     }
 }
 
-impl crate::bindings::streaming::commander::base::inputs::Host for WasiImpl<&mut WasmStorage> {}
-impl crate::bindings::streaming::commander::base::streaming_inputs::Host
+impl crate::bindings::streaming::tooltrain::base::inputs::Host for WasiImpl<&mut WasmStorage> {}
+impl crate::bindings::streaming::tooltrain::base::streaming_inputs::Host
     for WasiImpl<&mut WasmStorage>
 {
 }
-impl crate::bindings::streaming::commander::base::streaming_outputs::Host
+impl crate::bindings::streaming::tooltrain::base::streaming_outputs::Host
     for WasiImpl<&mut WasmStorage>
 {
 }

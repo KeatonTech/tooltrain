@@ -1,7 +1,7 @@
 use std::pin::Pin;
 
 use anyhow::{anyhow, Error};
-use commander_data::{CommanderCoder, CommanderDataType};
+use tooltrain_data::{CommanderCoder, CommanderDataType};
 use futures::FutureExt;
 use tokio_stream::{Stream, StreamExt};
 

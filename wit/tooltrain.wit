@@ -1,4 +1,4 @@
-package commander:base;
+package tooltrain:base;
 
 interface inputs {
     record argument-spec {

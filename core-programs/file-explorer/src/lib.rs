@@ -6,10 +6,10 @@ use std::{
 };
 
 use anyhow::{anyhow, Error};
-use commander_data::{CommanderCoder, CommanderPathDataType};
-use commander_rust_guest::{
+use tooltrain_data::{CommanderCoder, CommanderPathDataType};
+use tooltrain_rust_guest::{
     add_tree_output,
-    commander::base::{
+    tooltrain::base::{
         inputs::ArgumentSpec,
         streaming_inputs::Input,
         streaming_outputs::{TreeNode, TreeOutput, TreeOutputRequest},

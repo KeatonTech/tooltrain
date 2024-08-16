@@ -1,14 +1,14 @@
-use commander_data::{CommanderCoder, CommanderPathDataType};
-use commander_rust_guest::commander::base::inputs::ArgumentSpec;
-use commander_rust_guest::commander::base::streaming_outputs::ListOutputRequest;
-use commander_rust_guest::wasi::{
+use tooltrain_data::{CommanderCoder, CommanderPathDataType};
+use tooltrain_rust_guest::tooltrain::base::inputs::ArgumentSpec;
+use tooltrain_rust_guest::tooltrain::base::streaming_outputs::ListOutputRequest;
+use tooltrain_rust_guest::wasi::{
     http::{
         self,
         types::{Fields, IncomingBody, OutgoingRequest, Scheme},
     },
     io::streams::StreamError,
 };
-use commander_rust_guest::{Guest, Schema};
+use tooltrain_rust_guest::{Guest, Schema};
 
 mod parse;
 
@@ -79,7 +79,7 @@ impl MastodonFeedProgram {
         headers
             .set(
                 &"User-Agent".to_string(),
-                vec!["commander/0.1.0".as_bytes().to_vec()].as_slice(),
+                vec!["tooltrain/0.1.0".as_bytes().to_vec()].as_slice(),
             )
             .unwrap();
         headers

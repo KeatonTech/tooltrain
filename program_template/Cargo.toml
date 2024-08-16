@@ -10,4 +10,4 @@ crate-type = ["cdylib"]
 wit-bindgen = "0.20.0"
 
 [package.metadata.component]
-package = "commander:base"
+package = "tooltrain:base"
