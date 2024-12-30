@@ -7,5 +7,5 @@ edition = "2021"
 
 [dependencies]
 tokio-stream = "0.1.15"
-wit-bindgen = "~0.30"
-tooltrain-data = {path = "../tooltrain-data"}
+wit-bindgen = "~0.36"
+tooltrain-data = { path = "../tooltrain-data" }

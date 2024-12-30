@@ -6,7 +6,7 @@ members = [
     "host",
     "example-programs/mastodon-feed",
     "core-programs/ls",
-    "core-programs/file-explorer", "tooltrain-rust-guest",
+    "core-programs/file-explorer", "tooltrain-rust-guest", "tooltrain-model",
 ]
 exclude = ["program_template"]
 resolver = "2"

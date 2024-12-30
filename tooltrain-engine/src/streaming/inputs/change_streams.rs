@@ -1,9 +1,9 @@
 use std::pin::Pin;
 
 use anyhow::{anyhow, Error};
-use tooltrain_data::{CommanderCoder, CommanderDataType};
 use futures::FutureExt;
 use tokio_stream::{Stream, StreamExt};
+use tooltrain_data::{CommanderCoder, CommanderDataType};
 
 use crate::{
     bindings::streaming_inputs::{ListChange, TreeChange},

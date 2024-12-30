@@ -13,9 +13,9 @@ lazy_static = "1.*"
 parking_lot = { version = "0.12.*", features = ["send_guard"] }
 tokio = { version = "1.*", features = ["macros"] }
 tokio-stream = { version = "0.1.*", features = ["sync"] }
-wasmtime = { version = "23.*", features = ["component-model", "async"] }
-wasmtime-wasi = "23.*"
-wasmtime-wasi-http = "23.*"
+wasmtime = { version = "28.*", features = ["component-model", "async"] }
+wasmtime-wasi = "28.*"
+wasmtime-wasi-http = "28.*"
 tooltrain-data = { path = "../tooltrain-data" }
 derive_more = { version = "1.*", features = [
     "try_into",

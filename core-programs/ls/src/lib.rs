@@ -1,11 +1,12 @@
+use maplit::btreemap;
+use once_cell::sync::Lazy;
 use tooltrain_data::{
     CommanderCoder, CommanderEnumDataType, CommanderNumberDataType, CommanderPathDataType,
     CommanderStringDataType, CommanderStructDataType, CommanderStructTypeBuilder, CommanderValue,
 };
 use tooltrain_rust_guest::{
-    add_list_output,
+    add_list_output, export_guest,
     tooltrain::base::{inputs::ArgumentSpec, streaming_inputs::Input},
-    export_guest,
     wasi::{
         self,
         filesystem::types::{
@@ -14,8 +15,6 @@ use tooltrain_rust_guest::{
     },
     Guest, ListOutput, Schema,
 };
-use maplit::btreemap;
-use once_cell::sync::Lazy;
 
 static FILE_ENTITY_TYPE: Lazy<CommanderEnumDataType> = Lazy::new(|| {
     CommanderEnumDataType::new(

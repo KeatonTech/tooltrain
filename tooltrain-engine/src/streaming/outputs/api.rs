@@ -9,10 +9,10 @@ use crate::{
     },
 };
 use anyhow::Error;
-use tooltrain_data::CommanderValue;
 use parking_lot::RwLock;
 use tokio::sync::broadcast::Receiver;
 use tokio_stream::{once, wrappers::BroadcastStream, Stream, StreamExt};
+use tooltrain_data::CommanderValue;
 
 fn make_broadcast_stream<T: Clone + Send + 'static>(
     broadcast_receiver: Receiver<T>,
@@ -44,7 +44,7 @@ pub struct ValueOutputRef<'a> {
     id: ResourceId,
 }
 
-impl<'a> ValueOutputRef<'a> {
+impl ValueOutputRef<'_> {
     pub fn metadata(&self) -> DataStreamMetadata {
         self.storage.get(self.id).unwrap().metadata.clone()
     }
@@ -103,7 +103,7 @@ pub struct ListOutputRef<'a> {
     id: ResourceId,
 }
 
-impl<'a> ListOutputRef<'a> {
+impl ListOutputRef<'_> {
     pub fn metadata(&self) -> DataStreamMetadata {
         self.storage.get(self.id).unwrap().metadata.clone()
     }
@@ -171,7 +171,7 @@ pub struct TreeOutputRef<'a> {
     id: ResourceId,
 }
 
-impl<'a> TreeOutputRef<'a> {
+impl TreeOutputRef<'_> {
     pub fn metadata(&self) -> DataStreamMetadata {
         self.storage.get(self.id).unwrap().metadata.clone()
     }
@@ -250,7 +250,7 @@ pub enum OutputChange {
     Removed(ResourceId),
 }
 
-impl<'a> Outputs<'a> {
+impl Outputs<'_> {
     pub fn updates(&self) -> impl Stream<Item = OutputChange> + '_ {
         BroadcastStream::from(self.0.changes())
             .map_while(|result| result.ok())

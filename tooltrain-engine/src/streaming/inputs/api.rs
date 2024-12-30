@@ -1,11 +1,11 @@
 use std::{collections::BTreeMap, marker::PhantomData, sync::Arc};
 
+use parking_lot::RwLock;
+use tokio_stream::{once, wrappers::BroadcastStream, Stream, StreamExt};
 use tooltrain_data::{
     CommanderCoder, CommanderDataType, CommanderListDataType, CommanderTypedListDataType,
     CommanderValue,
 };
-use parking_lot::RwLock;
-use tokio_stream::{once, wrappers::BroadcastStream, Stream, StreamExt};
 use wasmtime::component::Resource;
 
 use crate::{
@@ -57,7 +57,7 @@ pub struct ValueInputRef<'a, ValueType: CommanderCoder> {
     _phantom: PhantomData<ValueType>,
 }
 
-impl<'a, ValueType: CommanderCoder> ValueInputRef<'a, ValueType>
+impl<ValueType: CommanderCoder> ValueInputRef<'_, ValueType>
 where
     ValueType::Value: Into<CommanderValue>,
 {
@@ -115,7 +115,7 @@ pub struct ListInputRef<'a, ValueType: CommanderCoder> {
     _phantom: PhantomData<ValueType>,
 }
 
-impl<'a, ValueType: CommanderCoder> ListInputRef<'a, ValueType>
+impl<ValueType: CommanderCoder> ListInputRef<'_, ValueType>
 where
     ValueType::Value: Into<CommanderValue>,
 {
@@ -178,7 +178,7 @@ pub enum InputChange {
 
 pub struct Inputs<'a>(pub(crate) &'a DataStreamStorage);
 
-impl<'a> Inputs<'a> {
+impl Inputs<'_> {
     pub fn updates(&self) -> impl Stream<Item = InputChange> + '_ {
         BroadcastStream::from(self.0.changes())
             .map_while(|result| result.ok())
@@ -273,7 +273,7 @@ impl<'a> Inputs<'a> {
         let resource_id = self.0.add(
             name,
             description,
-            CommanderDataType::List(data_type.into()),
+            CommanderDataType::List(data_type),
             Arc::new(RwLock::new(DataStream::List(ListStream::new()))),
         )?;
         Ok(ListInputHandle {

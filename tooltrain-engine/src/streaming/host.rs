@@ -12,8 +12,8 @@ use crate::{
 use anyhow::Error;
 use async_trait::async_trait;
 
-use tooltrain_data::{parse, CommanderCoder};
 use parking_lot::RwLock;
+use tooltrain_data::{parse, CommanderCoder};
 use wasmtime::component::*;
 use wasmtime_wasi::WasiImpl;
 

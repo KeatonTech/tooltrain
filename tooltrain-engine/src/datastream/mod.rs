@@ -6,8 +6,8 @@ mod tree;
 mod value;
 
 use anyhow::{anyhow, Error};
-use tooltrain_data::CommanderValue;
 pub use list::{ListChange, ListStream};
+use tooltrain_data::CommanderValue;
 pub use tree::{TreeChange, TreeStream, TreeStreamNode};
 pub use value::{ValueChange, ValueStream};
 

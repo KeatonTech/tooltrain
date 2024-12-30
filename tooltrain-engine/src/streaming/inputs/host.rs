@@ -1,8 +1,8 @@
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use tooltrain_data::{CommanderCoder, CommanderDataType, CommanderValue};
 use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
+use tooltrain_data::{CommanderCoder, CommanderDataType, CommanderValue};
 use wasmtime::component::Resource;
 use wasmtime_wasi::WasiImpl;
 
@@ -74,10 +74,10 @@ impl HostValueInput for WasiImpl<&mut WasmStorage> {
     }
 
     async fn destroy(&mut self, resource: Resource<ValueInput>) -> Result<(), Error> {
-        HostValueInput::drop(self, resource)
+        HostValueInput::drop(self, resource).await
     }
 
-    fn drop(&mut self, resource: Resource<ValueInput>) -> Result<(), Error> {
+    async fn drop(&mut self, resource: Resource<ValueInput>) -> Result<(), Error> {
         if self.0.inputs.remove(resource.rep())? {
             Ok(())
         } else {
@@ -172,10 +172,10 @@ impl HostListInput for WasiImpl<&mut WasmStorage> {
     }
 
     async fn destroy(&mut self, resource: Resource<ListInput>) -> Result<(), Error> {
-        HostListInput::drop(self, resource)
+        HostListInput::drop(self, resource).await
     }
 
-    fn drop(&mut self, resource: Resource<ListInput>) -> Result<(), Error> {
+    async fn drop(&mut self, resource: Resource<ListInput>) -> Result<(), Error> {
         if self.0.inputs.remove(resource.rep())? {
             Ok(())
         } else {
@@ -263,10 +263,10 @@ impl HostTreeInput for WasiImpl<&mut WasmStorage> {
     }
 
     async fn destroy(&mut self, resource: Resource<TreeInput>) -> Result<(), Error> {
-        HostTreeInput::drop(self, resource)
+        HostTreeInput::drop(self, resource).await
     }
 
-    fn drop(&mut self, resource: Resource<TreeInput>) -> Result<(), Error> {
+    async fn drop(&mut self, resource: Resource<TreeInput>) -> Result<(), Error> {
         if self.0.inputs.remove(resource.rep())? {
             Ok(())
         } else {
@@ -302,7 +302,7 @@ impl HostValueChangeStream for WasiImpl<&mut WasmStorage> {
             .await
     }
 
-    fn drop(&mut self, resource: Resource<ValueChangeStream>) -> Result<(), Error> {
+    async fn drop(&mut self, resource: Resource<ValueChangeStream>) -> Result<(), Error> {
         if self.0.input_streams.value_streams.remove(resource.rep()) {
             Ok(())
         } else {
@@ -338,7 +338,7 @@ impl HostListChangeStream for WasiImpl<&mut WasmStorage> {
             .await
     }
 
-    fn drop(&mut self, resource: Resource<ListChangeStream>) -> Result<(), Error> {
+    async fn drop(&mut self, resource: Resource<ListChangeStream>) -> Result<(), Error> {
         if self.0.input_streams.list_streams.remove(resource.rep()) {
             Ok(())
         } else {
@@ -374,7 +374,7 @@ impl HostTreeChangeStream for WasiImpl<&mut WasmStorage> {
             .await
     }
 
-    fn drop(&mut self, resource: Resource<TreeChangeStream>) -> Result<(), Error> {
+    async fn drop(&mut self, resource: Resource<TreeChangeStream>) -> Result<(), Error> {
         if self.0.input_streams.tree_streams.remove(resource.rep()) {
             Ok(())
         } else {

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use anyhow::Error;
-use tooltrain_data::CommanderValue;
 use tokio::sync::broadcast;
+use tooltrain_data::CommanderValue;
 
 #[derive(Clone, Debug)]
 pub enum ValueChange {
