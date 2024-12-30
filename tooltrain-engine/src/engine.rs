@@ -7,7 +7,7 @@ use std::{
 
 use anyhow::{anyhow, Error};
 
-use tooltrain_data::{CommanderCoder, CommanderDataType, CommanderValue};
+use tooltrain_data::{TooltrainCoder, TooltrainDataType, TooltrainValue};
 
 use tokio::sync::watch;
 
@@ -173,9 +173,9 @@ impl StreamingRunBuilder {
         to_output: O,
     ) -> Result<StreamingRunBuilder, Error>
     where
-        ValueType: CommanderCoder,
-        ValueType: Into<CommanderDataType>,
-        ValueType::Value: Into<CommanderValue>,
+        ValueType: TooltrainCoder,
+        ValueType: Into<TooltrainDataType>,
+        ValueType::Value: Into<TooltrainValue>,
     {
         let inputs = Inputs(&self.store.data().inputs);
         let data_type = tooltrain_data::parse(&argument.data_type)?;
@@ -196,9 +196,9 @@ impl StreamingRunBuilder {
         initial_value: ValueType::Value,
     ) -> Result<StreamingRunBuilder, Error>
     where
-        ValueType: CommanderCoder,
-        ValueType: Into<CommanderDataType>,
-        ValueType::Value: Into<CommanderValue>,
+        ValueType: TooltrainCoder,
+        ValueType: Into<TooltrainDataType>,
+        ValueType::Value: Into<TooltrainValue>,
     {
         let inputs = Inputs(&self.store.data().inputs);
         let data_type = tooltrain_data::parse(&argument.data_type)?;
@@ -242,7 +242,7 @@ impl StreamingRunBuilder {
                 } else {
                     let data_type = tooltrain_data::parse(&arg_spec.data_type)?;
                     Ok(match data_type {
-                        CommanderDataType::List(l) => Inputs(&input_storage_clone)
+                        TooltrainDataType::List(l) => Inputs(&input_storage_clone)
                             .new_generic_list_input(arg_spec.name, arg_spec.description, l)?
                             .as_input_binding(),
                         _ => Inputs(&input_storage_clone)

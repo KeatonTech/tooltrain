@@ -1,8 +1,8 @@
 use maplit::btreemap;
 use once_cell::sync::Lazy;
 use tooltrain_data::{
-    CommanderCoder, CommanderEnumDataType, CommanderNumberDataType, CommanderPathDataType,
-    CommanderStringDataType, CommanderStructDataType, CommanderStructTypeBuilder, CommanderValue,
+    TooltrainCoder, TooltrainEnumDataType, TooltrainNumberDataType, TooltrainPathDataType,
+    TooltrainStringDataType, TooltrainStructDataType, TooltrainStructTypeBuilder, TooltrainValue,
 };
 use tooltrain_rust_guest::{
     add_list_output, export_guest,
@@ -16,8 +16,8 @@ use tooltrain_rust_guest::{
     Guest, ListOutput, Schema,
 };
 
-static FILE_ENTITY_TYPE: Lazy<CommanderEnumDataType> = Lazy::new(|| {
-    CommanderEnumDataType::new(
+static FILE_ENTITY_TYPE: Lazy<TooltrainEnumDataType> = Lazy::new(|| {
+    TooltrainEnumDataType::new(
         "FileEntityType".to_string(),
         vec![
             "FILE".to_string(),
@@ -28,10 +28,10 @@ static FILE_ENTITY_TYPE: Lazy<CommanderEnumDataType> = Lazy::new(|| {
     )
 });
 
-static FILE_STRUCT: Lazy<CommanderStructDataType> = Lazy::new(|| {
-    CommanderStructTypeBuilder::new("File")
-        .add_field("name", CommanderStringDataType {})
-        .add_field("size", CommanderNumberDataType {})
+static FILE_STRUCT: Lazy<TooltrainStructDataType> = Lazy::new(|| {
+    TooltrainStructTypeBuilder::new("File")
+        .add_field("name", TooltrainStringDataType {})
+        .add_field("size", TooltrainNumberDataType {})
         .add_field("type", FILE_ENTITY_TYPE.clone())
         .build()
 });
@@ -44,7 +44,7 @@ enum FileEntityType {
 }
 
 impl FileEntityType {
-    fn to_tooltrain_value(&self) -> CommanderValue {
+    fn to_tooltrain_value(&self) -> TooltrainValue {
         match self {
             FileEntityType::File => FILE_ENTITY_TYPE.get_variant("FILE").unwrap().into(),
             FileEntityType::Directory => FILE_ENTITY_TYPE.get_variant("DIRECTORY").unwrap().into(),
@@ -64,7 +64,7 @@ impl Guest for ListProgram {
             arguments: vec![ArgumentSpec {
                 name: "directory".to_string(),
                 description: "The top-level directory to list files in".to_string(),
-                data_type: CommanderPathDataType {}.type_string(),
+                data_type: TooltrainPathDataType {}.type_string(),
                 supports_updates: false,
             }],
             performs_state_change: false,
@@ -75,7 +75,7 @@ impl Guest for ListProgram {
         let Some(Input::ValueInput(path)) = &inputs.first() else {
             return Err("Invalid input".to_string());
         };
-        let pathbuf = CommanderPathDataType {}
+        let pathbuf = TooltrainPathDataType {}
             .decode(&path.get().unwrap())
             .map_err(|_| "Could not read path".to_string())?;
         let path_components: Vec<String> = pathbuf
@@ -139,7 +139,7 @@ impl ListProgram {
         ListProgram::navigate_to_dir(next_dir, &path[1..])
     }
 
-    fn file_stat_to_type_enum(stat: &DescriptorStat) -> CommanderValue {
+    fn file_stat_to_type_enum(stat: &DescriptorStat) -> TooltrainValue {
         match stat.type_ {
             DescriptorType::RegularFile => FileEntityType::File.to_tooltrain_value(),
             DescriptorType::Directory => FileEntityType::Directory.to_tooltrain_value(),

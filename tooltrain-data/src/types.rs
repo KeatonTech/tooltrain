@@ -6,9 +6,9 @@ use serde::{ser::SerializeSeq, Deserialize, Serialize, Serializer};
 use std::{collections::BTreeMap, marker::PhantomData, path::PathBuf};
 
 #[derive(Clone, Copy, Default, Debug)]
-pub struct CommanderTriggerDataType {}
+pub struct TooltrainTriggerDataType {}
 
-impl CommanderPrimitiveCoder for CommanderTriggerDataType {
+impl TooltrainPrimitiveCoder for TooltrainTriggerDataType {
     type Value = PhantomData<bool>;
     fn type_string__(&self) -> &'static str {
         "trigger"
@@ -16,9 +16,9 @@ impl CommanderPrimitiveCoder for CommanderTriggerDataType {
 }
 
 #[derive(Clone, Copy, Default, Debug)]
-pub struct CommanderBooleanDataType {}
+pub struct TooltrainBooleanDataType {}
 
-impl CommanderPrimitiveCoder for CommanderBooleanDataType {
+impl TooltrainPrimitiveCoder for TooltrainBooleanDataType {
     type Value = bool;
     fn type_string__(&self) -> &'static str {
         "boolean"
@@ -26,9 +26,9 @@ impl CommanderPrimitiveCoder for CommanderBooleanDataType {
 }
 
 #[derive(Clone, Copy, Default, Debug)]
-pub struct CommanderNumberDataType {}
+pub struct TooltrainNumberDataType {}
 
-impl CommanderPrimitiveCoder for CommanderNumberDataType {
+impl TooltrainPrimitiveCoder for TooltrainNumberDataType {
     type Value = f64;
     fn type_string__(&self) -> &'static str {
         "number"
@@ -36,9 +36,9 @@ impl CommanderPrimitiveCoder for CommanderNumberDataType {
 }
 
 #[derive(Clone, Copy, Default, Debug)]
-pub struct CommanderStringDataType {}
+pub struct TooltrainStringDataType {}
 
-impl CommanderPrimitiveCoder for CommanderStringDataType {
+impl TooltrainPrimitiveCoder for TooltrainStringDataType {
     type Value = String;
     fn type_string__(&self) -> &'static str {
         "string"
@@ -46,9 +46,9 @@ impl CommanderPrimitiveCoder for CommanderStringDataType {
 }
 
 #[derive(Clone, Copy, Default, Debug)]
-pub struct CommanderBytesDataType {}
+pub struct TooltrainBytesDataType {}
 
-impl CommanderPrimitiveCoder for CommanderBytesDataType {
+impl TooltrainPrimitiveCoder for TooltrainBytesDataType {
     type Value = Vec<u8>;
     fn type_string__(&self) -> &'static str {
         "bytes"
@@ -56,9 +56,9 @@ impl CommanderPrimitiveCoder for CommanderBytesDataType {
 }
 
 #[derive(Clone, Copy, Default, Debug)]
-pub struct CommanderColorDataType {}
+pub struct TooltrainColorDataType {}
 
-impl CommanderPrimitiveCoder for CommanderColorDataType {
+impl TooltrainPrimitiveCoder for TooltrainColorDataType {
     type Value = [u16; 4];
     fn type_string__(&self) -> &'static str {
         "color"
@@ -69,9 +69,9 @@ impl CommanderPrimitiveCoder for CommanderColorDataType {
 pub struct JsonString(String);
 
 #[derive(Clone, Copy, Default, Debug)]
-pub struct CommanderJsonDataType {}
+pub struct TooltrainJsonDataType {}
 
-impl CommanderPrimitiveCoder for CommanderJsonDataType {
+impl TooltrainPrimitiveCoder for TooltrainJsonDataType {
     type Value = JsonString;
     fn type_string__(&self) -> &'static str {
         "json"
@@ -82,9 +82,9 @@ impl CommanderPrimitiveCoder for CommanderJsonDataType {
 pub struct SvgString(String);
 
 #[derive(Clone, Copy, Default, Debug)]
-pub struct CommanderSvgDataType {}
+pub struct TooltrainSvgDataType {}
 
-impl CommanderPrimitiveCoder for CommanderSvgDataType {
+impl TooltrainPrimitiveCoder for TooltrainSvgDataType {
     type Value = SvgString;
     fn type_string__(&self) -> &'static str {
         "svg"
@@ -92,9 +92,9 @@ impl CommanderPrimitiveCoder for CommanderSvgDataType {
 }
 
 #[derive(Clone, Copy, Default, Debug)]
-pub struct CommanderPathDataType {}
+pub struct TooltrainPathDataType {}
 
-impl CommanderWireFormatCoder for CommanderPathDataType {
+impl TooltrainWireFormatCoder for TooltrainPathDataType {
     type Value = PathBuf;
     type WireFormat = Vec<String>;
 
@@ -115,31 +115,31 @@ impl CommanderWireFormatCoder for CommanderPathDataType {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct CommanderEnumVariant {
+pub struct TooltrainEnumVariant {
     name: String,
     ordinal: u32,
 }
 
-impl CommanderEnumVariant {
+impl TooltrainEnumVariant {
     pub fn get_name(&self) -> &str {
         &self.name
     }
 }
 
 #[derive(Clone, Default, Debug)]
-pub struct CommanderEnumDataType {
+pub struct TooltrainEnumDataType {
     name: String,
-    variants: Vec<CommanderEnumVariant>,
+    variants: Vec<TooltrainEnumVariant>,
 }
 
-impl CommanderEnumDataType {
+impl TooltrainEnumDataType {
     pub fn new(name: String, variants: Vec<String>) -> Self {
-        CommanderEnumDataType {
+        TooltrainEnumDataType {
             name,
             variants: variants
                 .into_iter()
                 .enumerate()
-                .map(|(ordinal, name)| CommanderEnumVariant {
+                .map(|(ordinal, name)| TooltrainEnumVariant {
                     name,
                     ordinal: ordinal as u32,
                 })
@@ -152,16 +152,16 @@ impl CommanderEnumDataType {
     }
 
     pub fn list_variants(&self) -> impl Iterator<Item = &str> {
-        self.variants.iter().map(CommanderEnumVariant::get_name)
+        self.variants.iter().map(TooltrainEnumVariant::get_name)
     }
 
-    pub fn get_variant(&self, name: &str) -> Option<CommanderEnumVariant> {
+    pub fn get_variant(&self, name: &str) -> Option<TooltrainEnumVariant> {
         self.variants.iter().find(|v| v.name == name).cloned()
     }
 }
 
-impl CommanderWireFormatCoder for CommanderEnumDataType {
-    type Value = CommanderEnumVariant;
+impl TooltrainWireFormatCoder for TooltrainEnumDataType {
+    type Value = TooltrainEnumVariant;
     type WireFormat = u32;
 
     fn type_string_(&self) -> String {
@@ -186,54 +186,54 @@ impl CommanderWireFormatCoder for CommanderEnumDataType {
 }
 
 #[derive(Clone, Debug, From, TryInto, IsVariant, Unwrap)]
-pub enum CommanderDataType {
-    Trigger(CommanderTriggerDataType),
-    Boolean(CommanderBooleanDataType),
-    Number(CommanderNumberDataType),
-    String(CommanderStringDataType),
-    Bytes(CommanderBytesDataType),
-    Color(CommanderColorDataType),
-    Json(CommanderJsonDataType),
-    Svg(CommanderSvgDataType),
-    Path(CommanderPathDataType),
-    Enum(CommanderEnumDataType),
-    Struct(CommanderStructDataType),
-    List(CommanderListDataType),
+pub enum TooltrainDataType {
+    Trigger(TooltrainTriggerDataType),
+    Boolean(TooltrainBooleanDataType),
+    Number(TooltrainNumberDataType),
+    String(TooltrainStringDataType),
+    Bytes(TooltrainBytesDataType),
+    Color(TooltrainColorDataType),
+    Json(TooltrainJsonDataType),
+    Svg(TooltrainSvgDataType),
+    Path(TooltrainPathDataType),
+    Enum(TooltrainEnumDataType),
+    Struct(TooltrainStructDataType),
+    List(TooltrainListDataType),
 }
 
 #[derive(Clone, Debug, PartialEq, PartialOrd, From, TryInto, IsVariant, Unwrap)]
-pub enum CommanderValue {
-    Trigger(<CommanderTriggerDataType as CommanderCoder>::Value),
-    Boolean(<CommanderBooleanDataType as CommanderCoder>::Value),
-    Number(<CommanderNumberDataType as CommanderCoder>::Value),
-    String(<CommanderStringDataType as CommanderCoder>::Value),
-    Bytes(<CommanderBytesDataType as CommanderCoder>::Value),
-    Color(<CommanderColorDataType as CommanderCoder>::Value),
-    Json(<CommanderJsonDataType as CommanderCoder>::Value),
-    Svg(<CommanderSvgDataType as CommanderCoder>::Value),
-    Path(<CommanderPathDataType as CommanderCoder>::Value),
-    Enum(<CommanderEnumDataType as CommanderCoder>::Value),
-    Struct(<CommanderStructDataType as CommanderCoder>::Value),
-    List(<CommanderListDataType as CommanderCoder>::Value),
+pub enum TooltrainValue {
+    Trigger(<TooltrainTriggerDataType as TooltrainCoder>::Value),
+    Boolean(<TooltrainBooleanDataType as TooltrainCoder>::Value),
+    Number(<TooltrainNumberDataType as TooltrainCoder>::Value),
+    String(<TooltrainStringDataType as TooltrainCoder>::Value),
+    Bytes(<TooltrainBytesDataType as TooltrainCoder>::Value),
+    Color(<TooltrainColorDataType as TooltrainCoder>::Value),
+    Json(<TooltrainJsonDataType as TooltrainCoder>::Value),
+    Svg(<TooltrainSvgDataType as TooltrainCoder>::Value),
+    Path(<TooltrainPathDataType as TooltrainCoder>::Value),
+    Enum(<TooltrainEnumDataType as TooltrainCoder>::Value),
+    Struct(<TooltrainStructDataType as TooltrainCoder>::Value),
+    List(<TooltrainListDataType as TooltrainCoder>::Value),
 }
 
-impl CommanderCoder for CommanderDataType {
-    type Value = CommanderValue;
+impl TooltrainCoder for TooltrainDataType {
+    type Value = TooltrainValue;
 
     fn type_string(&self) -> String {
         match self {
-            CommanderDataType::Trigger(inner) => inner.type_string(),
-            CommanderDataType::Boolean(inner) => inner.type_string(),
-            CommanderDataType::Number(inner) => inner.type_string(),
-            CommanderDataType::String(inner) => inner.type_string(),
-            CommanderDataType::Bytes(inner) => inner.type_string(),
-            CommanderDataType::Color(inner) => inner.type_string(),
-            CommanderDataType::Json(inner) => inner.type_string(),
-            CommanderDataType::Svg(inner) => inner.type_string(),
-            CommanderDataType::Path(inner) => inner.type_string(),
-            CommanderDataType::Enum(inner) => inner.type_string(),
-            CommanderDataType::Struct(inner) => inner.type_string(),
-            CommanderDataType::List(inner) => inner.type_string(),
+            TooltrainDataType::Trigger(inner) => inner.type_string(),
+            TooltrainDataType::Boolean(inner) => inner.type_string(),
+            TooltrainDataType::Number(inner) => inner.type_string(),
+            TooltrainDataType::String(inner) => inner.type_string(),
+            TooltrainDataType::Bytes(inner) => inner.type_string(),
+            TooltrainDataType::Color(inner) => inner.type_string(),
+            TooltrainDataType::Json(inner) => inner.type_string(),
+            TooltrainDataType::Svg(inner) => inner.type_string(),
+            TooltrainDataType::Path(inner) => inner.type_string(),
+            TooltrainDataType::Enum(inner) => inner.type_string(),
+            TooltrainDataType::Struct(inner) => inner.type_string(),
+            TooltrainDataType::List(inner) => inner.type_string(),
         }
     }
 
@@ -243,73 +243,73 @@ impl CommanderCoder for CommanderDataType {
         value: Self::Value,
     ) -> Result<(), Error> {
         match self {
-            CommanderDataType::Trigger(inner) => inner.encode_to_serializer(
+            TooltrainDataType::Trigger(inner) => inner.encode_to_serializer(
                 serializer,
                 value
                     .try_into()
                     .map_err(|s| anyhow!("Expected a trigger value. {s}"))?,
             ),
-            CommanderDataType::Boolean(inner) => inner.encode_to_serializer(
+            TooltrainDataType::Boolean(inner) => inner.encode_to_serializer(
                 serializer,
                 value
                     .try_into()
                     .map_err(|s| anyhow!("Expected a boolean value. {s}"))?,
             ),
-            CommanderDataType::Number(inner) => inner.encode_to_serializer(
+            TooltrainDataType::Number(inner) => inner.encode_to_serializer(
                 serializer,
                 value
                     .try_into()
                     .map_err(|s| anyhow!("Expected a number value. {s}"))?,
             ),
-            CommanderDataType::String(inner) => inner.encode_to_serializer(
+            TooltrainDataType::String(inner) => inner.encode_to_serializer(
                 serializer,
                 value
                     .try_into()
                     .map_err(|s| anyhow!("Expected a string value. {s}"))?,
             ),
-            CommanderDataType::Bytes(inner) => inner.encode_to_serializer(
+            TooltrainDataType::Bytes(inner) => inner.encode_to_serializer(
                 serializer,
                 value
                     .try_into()
                     .map_err(|s| anyhow!("Expected a bytes value. {s}"))?,
             ),
-            CommanderDataType::Color(inner) => inner.encode_to_serializer(
+            TooltrainDataType::Color(inner) => inner.encode_to_serializer(
                 serializer,
                 value
                     .try_into()
                     .map_err(|s| anyhow!("Expected a color value. {s}"))?,
             ),
-            CommanderDataType::Json(inner) => inner.encode_to_serializer(
+            TooltrainDataType::Json(inner) => inner.encode_to_serializer(
                 serializer,
                 value
                     .try_into()
                     .map_err(|s| anyhow!("Expected a json value. {s}"))?,
             ),
-            CommanderDataType::Svg(inner) => inner.encode_to_serializer(
+            TooltrainDataType::Svg(inner) => inner.encode_to_serializer(
                 serializer,
                 value
                     .try_into()
                     .map_err(|s| anyhow!("Expected a svg value. {s}"))?,
             ),
-            CommanderDataType::Path(inner) => inner.encode_to_serializer(
+            TooltrainDataType::Path(inner) => inner.encode_to_serializer(
                 serializer,
                 value
                     .try_into()
                     .map_err(|s| anyhow!("Expected a path value. {s}"))?,
             ),
-            CommanderDataType::Enum(inner) => inner.encode_to_serializer(
+            TooltrainDataType::Enum(inner) => inner.encode_to_serializer(
                 serializer,
                 value
                     .try_into()
                     .map_err(|s| anyhow!("Expected a enum value. {s}"))?,
             ),
-            CommanderDataType::Struct(inner) => inner.encode_to_serializer(
+            TooltrainDataType::Struct(inner) => inner.encode_to_serializer(
                 serializer,
                 value
                     .try_into()
                     .map_err(|s| anyhow!("Expected a struct value. {s}"))?,
             ),
-            CommanderDataType::List(inner) => inner.encode_to_serializer(
+            TooltrainDataType::List(inner) => inner.encode_to_serializer(
                 serializer,
                 value
                     .try_into()
@@ -320,69 +320,69 @@ impl CommanderCoder for CommanderDataType {
 
     fn decode_from_reader(&self, reader: Reader<&[u8]>) -> Result<Self::Value, Error> {
         match self {
-            CommanderDataType::Trigger(inner) => {
-                Ok(CommanderValue::Trigger(inner.decode_from_reader(reader)?))
+            TooltrainDataType::Trigger(inner) => {
+                Ok(TooltrainValue::Trigger(inner.decode_from_reader(reader)?))
             }
-            CommanderDataType::Boolean(inner) => {
-                Ok(CommanderValue::Boolean(inner.decode_from_reader(reader)?))
+            TooltrainDataType::Boolean(inner) => {
+                Ok(TooltrainValue::Boolean(inner.decode_from_reader(reader)?))
             }
-            CommanderDataType::Number(inner) => {
-                Ok(CommanderValue::Number(inner.decode_from_reader(reader)?))
+            TooltrainDataType::Number(inner) => {
+                Ok(TooltrainValue::Number(inner.decode_from_reader(reader)?))
             }
-            CommanderDataType::String(inner) => {
-                Ok(CommanderValue::String(inner.decode_from_reader(reader)?))
+            TooltrainDataType::String(inner) => {
+                Ok(TooltrainValue::String(inner.decode_from_reader(reader)?))
             }
-            CommanderDataType::Bytes(inner) => {
-                Ok(CommanderValue::Bytes(inner.decode_from_reader(reader)?))
+            TooltrainDataType::Bytes(inner) => {
+                Ok(TooltrainValue::Bytes(inner.decode_from_reader(reader)?))
             }
-            CommanderDataType::Color(inner) => {
-                Ok(CommanderValue::Color(inner.decode_from_reader(reader)?))
+            TooltrainDataType::Color(inner) => {
+                Ok(TooltrainValue::Color(inner.decode_from_reader(reader)?))
             }
-            CommanderDataType::Json(inner) => {
-                Ok(CommanderValue::Json(inner.decode_from_reader(reader)?))
+            TooltrainDataType::Json(inner) => {
+                Ok(TooltrainValue::Json(inner.decode_from_reader(reader)?))
             }
-            CommanderDataType::Svg(inner) => {
-                Ok(CommanderValue::Svg(inner.decode_from_reader(reader)?))
+            TooltrainDataType::Svg(inner) => {
+                Ok(TooltrainValue::Svg(inner.decode_from_reader(reader)?))
             }
-            CommanderDataType::Path(inner) => {
-                Ok(CommanderValue::Path(inner.decode_from_reader(reader)?))
+            TooltrainDataType::Path(inner) => {
+                Ok(TooltrainValue::Path(inner.decode_from_reader(reader)?))
             }
-            CommanderDataType::Enum(inner) => {
-                Ok(CommanderValue::Enum(inner.decode_from_reader(reader)?))
+            TooltrainDataType::Enum(inner) => {
+                Ok(TooltrainValue::Enum(inner.decode_from_reader(reader)?))
             }
-            CommanderDataType::Struct(inner) => {
-                Ok(CommanderValue::Struct(inner.decode_from_reader(reader)?))
+            TooltrainDataType::Struct(inner) => {
+                Ok(TooltrainValue::Struct(inner.decode_from_reader(reader)?))
             }
-            CommanderDataType::List(inner) => {
-                Ok(CommanderValue::List(inner.decode_from_reader(reader)?))
+            TooltrainDataType::List(inner) => {
+                Ok(TooltrainValue::List(inner.decode_from_reader(reader)?))
             }
         }
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct CommanderStructDataType {
+pub struct TooltrainStructDataType {
     pub name: String,
     field_names: Vec<String>,
-    field_types: Vec<CommanderDataType>,
+    field_types: Vec<TooltrainDataType>,
 }
 
-impl CommanderStructDataType {
+impl TooltrainStructDataType {
     pub fn column_types(&self) -> Vec<String> {
         self.field_types.iter().map(|t| t.type_string()).collect()
     }
 }
 
 #[derive(Clone)]
-pub struct CommanderStructTypeBuilder {
+pub struct TooltrainStructTypeBuilder {
     pub name: String,
     field_names: Vec<String>,
-    field_types: Vec<CommanderDataType>,
+    field_types: Vec<TooltrainDataType>,
 }
 
-impl CommanderStructTypeBuilder {
+impl TooltrainStructTypeBuilder {
     pub fn new(name: &str) -> Self {
-        CommanderStructTypeBuilder {
+        TooltrainStructTypeBuilder {
             name: name.to_string(),
             field_names: vec![],
             field_types: vec![],
@@ -392,16 +392,16 @@ impl CommanderStructTypeBuilder {
     pub fn add_field<D>(mut self, name: &str, data_type: D) -> Self
     where
         D: 'static,
-        D: CommanderCoder,
-        D: Into<CommanderDataType>,
+        D: TooltrainCoder,
+        D: Into<TooltrainDataType>,
     {
         self.field_names.push(name.to_string());
         self.field_types.push(data_type.into());
         self
     }
 
-    pub fn build(self) -> CommanderStructDataType {
-        CommanderStructDataType {
+    pub fn build(self) -> TooltrainStructDataType {
+        TooltrainStructDataType {
             name: self.name,
             field_names: self.field_names,
             field_types: self.field_types,
@@ -409,8 +409,8 @@ impl CommanderStructTypeBuilder {
     }
 }
 
-impl CommanderCoder for CommanderStructDataType {
-    type Value = BTreeMap<String, CommanderValue>;
+impl TooltrainCoder for TooltrainStructDataType {
+    type Value = BTreeMap<String, TooltrainValue>;
 
     fn type_string(&self) -> String {
         let type_args = self
@@ -440,7 +440,7 @@ impl CommanderCoder for CommanderStructDataType {
 
     fn decode_from_reader(&self, reader: Reader<&[u8]>) -> Result<Self::Value, Error> {
         let vector_reader = reader.get_vector()?;
-        let mut values: Vec<CommanderValue> = vec![];
+        let mut values: Vec<TooltrainValue> = vec![];
         for (reader, type_box) in vector_reader.iter().zip(self.field_types.iter()) {
             values.push(type_box.decode_from_reader(reader)?);
         }
@@ -449,17 +449,17 @@ impl CommanderCoder for CommanderStructDataType {
 }
 
 #[derive(Clone, Debug)]
-pub struct CommanderTypedListDataType<V: CommanderCoder + 'static> {
+pub struct TooltrainTypedListDataType<V: TooltrainCoder + 'static> {
     child_type: V,
 }
 
-impl<V: CommanderCoder + 'static> CommanderTypedListDataType<V> {
+impl<V: TooltrainCoder + 'static> TooltrainTypedListDataType<V> {
     pub fn new(child_type: V) -> Self {
-        CommanderTypedListDataType::<V> { child_type }
+        TooltrainTypedListDataType::<V> { child_type }
     }
 }
 
-impl<V: CommanderCoder + 'static> CommanderCoder for CommanderTypedListDataType<V> {
+impl<V: TooltrainCoder + 'static> TooltrainCoder for TooltrainTypedListDataType<V> {
     type Value = Vec<V::Value>;
 
     fn type_string(&self) -> String {
@@ -491,54 +491,54 @@ impl<V: CommanderCoder + 'static> CommanderCoder for CommanderTypedListDataType<
     }
 }
 
-pub type CommanderGenericListDataType = CommanderTypedListDataType<CommanderDataType>;
+pub type TooltrainGenericListDataType = TooltrainTypedListDataType<TooltrainDataType>;
 
 #[derive(Clone, Debug, TryInto, IsVariant, Unwrap)]
-pub enum CommanderListDataType {
-    Boolean(CommanderTypedListDataType<CommanderBooleanDataType>),
-    Number(CommanderTypedListDataType<CommanderNumberDataType>),
-    String(CommanderTypedListDataType<CommanderStringDataType>),
-    Bytes(CommanderTypedListDataType<CommanderBytesDataType>),
-    Color(CommanderTypedListDataType<CommanderColorDataType>),
-    Json(CommanderTypedListDataType<CommanderJsonDataType>),
-    Svg(CommanderTypedListDataType<CommanderSvgDataType>),
-    Path(CommanderTypedListDataType<CommanderPathDataType>),
-    Enum(CommanderTypedListDataType<CommanderEnumDataType>),
-    Struct(CommanderTypedListDataType<CommanderStructDataType>),
-    Generic(Box<CommanderGenericListDataType>),
+pub enum TooltrainListDataType {
+    Boolean(TooltrainTypedListDataType<TooltrainBooleanDataType>),
+    Number(TooltrainTypedListDataType<TooltrainNumberDataType>),
+    String(TooltrainTypedListDataType<TooltrainStringDataType>),
+    Bytes(TooltrainTypedListDataType<TooltrainBytesDataType>),
+    Color(TooltrainTypedListDataType<TooltrainColorDataType>),
+    Json(TooltrainTypedListDataType<TooltrainJsonDataType>),
+    Svg(TooltrainTypedListDataType<TooltrainSvgDataType>),
+    Path(TooltrainTypedListDataType<TooltrainPathDataType>),
+    Enum(TooltrainTypedListDataType<TooltrainEnumDataType>),
+    Struct(TooltrainTypedListDataType<TooltrainStructDataType>),
+    Generic(Box<TooltrainGenericListDataType>),
 }
 
 #[derive(Clone, Debug, TryInto, IsVariant, Unwrap)]
-pub enum CommanderListValue {
-    Boolean(Vec<<CommanderBooleanDataType as CommanderCoder>::Value>),
-    Number(Vec<<CommanderNumberDataType as CommanderCoder>::Value>),
-    String(Vec<<CommanderStringDataType as CommanderCoder>::Value>),
-    Bytes(Vec<<CommanderBytesDataType as CommanderCoder>::Value>),
-    Color(Vec<<CommanderColorDataType as CommanderCoder>::Value>),
-    Json(Vec<<CommanderJsonDataType as CommanderCoder>::Value>),
-    Svg(Vec<<CommanderSvgDataType as CommanderCoder>::Value>),
-    Path(Vec<<CommanderPathDataType as CommanderCoder>::Value>),
-    Enum(Vec<<CommanderEnumDataType as CommanderCoder>::Value>),
-    Struct(Vec<<CommanderStructDataType as CommanderCoder>::Value>),
-    Generic(Vec<Box<CommanderValue>>),
+pub enum TooltrainListValue {
+    Boolean(Vec<<TooltrainBooleanDataType as TooltrainCoder>::Value>),
+    Number(Vec<<TooltrainNumberDataType as TooltrainCoder>::Value>),
+    String(Vec<<TooltrainStringDataType as TooltrainCoder>::Value>),
+    Bytes(Vec<<TooltrainBytesDataType as TooltrainCoder>::Value>),
+    Color(Vec<<TooltrainColorDataType as TooltrainCoder>::Value>),
+    Json(Vec<<TooltrainJsonDataType as TooltrainCoder>::Value>),
+    Svg(Vec<<TooltrainSvgDataType as TooltrainCoder>::Value>),
+    Path(Vec<<TooltrainPathDataType as TooltrainCoder>::Value>),
+    Enum(Vec<<TooltrainEnumDataType as TooltrainCoder>::Value>),
+    Struct(Vec<<TooltrainStructDataType as TooltrainCoder>::Value>),
+    Generic(Vec<Box<TooltrainValue>>),
 }
 
-impl CommanderCoder for CommanderListDataType {
-    type Value = Vec<CommanderValue>;
+impl TooltrainCoder for TooltrainListDataType {
+    type Value = Vec<TooltrainValue>;
 
     fn type_string(&self) -> String {
         match self {
-            CommanderListDataType::Boolean(inner) => inner.type_string(),
-            CommanderListDataType::Number(inner) => inner.type_string(),
-            CommanderListDataType::String(inner) => inner.type_string(),
-            CommanderListDataType::Bytes(inner) => inner.type_string(),
-            CommanderListDataType::Color(inner) => inner.type_string(),
-            CommanderListDataType::Json(inner) => inner.type_string(),
-            CommanderListDataType::Svg(inner) => inner.type_string(),
-            CommanderListDataType::Path(inner) => inner.type_string(),
-            CommanderListDataType::Enum(inner) => inner.type_string(),
-            CommanderListDataType::Struct(inner) => inner.type_string(),
-            CommanderListDataType::Generic(inner) => inner.type_string(),
+            TooltrainListDataType::Boolean(inner) => inner.type_string(),
+            TooltrainListDataType::Number(inner) => inner.type_string(),
+            TooltrainListDataType::String(inner) => inner.type_string(),
+            TooltrainListDataType::Bytes(inner) => inner.type_string(),
+            TooltrainListDataType::Color(inner) => inner.type_string(),
+            TooltrainListDataType::Json(inner) => inner.type_string(),
+            TooltrainListDataType::Svg(inner) => inner.type_string(),
+            TooltrainListDataType::Path(inner) => inner.type_string(),
+            TooltrainListDataType::Enum(inner) => inner.type_string(),
+            TooltrainListDataType::Struct(inner) => inner.type_string(),
+            TooltrainListDataType::Generic(inner) => inner.type_string(),
         }
     }
 
@@ -548,103 +548,103 @@ impl CommanderCoder for CommanderListDataType {
         value: Self::Value,
     ) -> Result<(), Error> {
         match self {
-            CommanderListDataType::Boolean(inner) => inner.encode_to_serializer(
+            TooltrainListDataType::Boolean(inner) => inner.encode_to_serializer(
                 serializer,
                 value.into_iter().map(|v| v.try_into().unwrap()).collect(),
             ),
-            CommanderListDataType::Number(inner) => inner.encode_to_serializer(
+            TooltrainListDataType::Number(inner) => inner.encode_to_serializer(
                 serializer,
                 value.into_iter().map(|v| v.try_into().unwrap()).collect(),
             ),
-            CommanderListDataType::String(inner) => inner.encode_to_serializer(
+            TooltrainListDataType::String(inner) => inner.encode_to_serializer(
                 serializer,
                 value.into_iter().map(|v| v.try_into().unwrap()).collect(),
             ),
-            CommanderListDataType::Bytes(inner) => inner.encode_to_serializer(
+            TooltrainListDataType::Bytes(inner) => inner.encode_to_serializer(
                 serializer,
                 value.into_iter().map(|v| v.try_into().unwrap()).collect(),
             ),
-            CommanderListDataType::Color(inner) => inner.encode_to_serializer(
+            TooltrainListDataType::Color(inner) => inner.encode_to_serializer(
                 serializer,
                 value.into_iter().map(|v| v.try_into().unwrap()).collect(),
             ),
-            CommanderListDataType::Json(inner) => inner.encode_to_serializer(
+            TooltrainListDataType::Json(inner) => inner.encode_to_serializer(
                 serializer,
                 value.into_iter().map(|v| v.try_into().unwrap()).collect(),
             ),
-            CommanderListDataType::Svg(inner) => inner.encode_to_serializer(
+            TooltrainListDataType::Svg(inner) => inner.encode_to_serializer(
                 serializer,
                 value.into_iter().map(|v| v.try_into().unwrap()).collect(),
             ),
-            CommanderListDataType::Path(inner) => inner.encode_to_serializer(
+            TooltrainListDataType::Path(inner) => inner.encode_to_serializer(
                 serializer,
                 value.into_iter().map(|v| v.try_into().unwrap()).collect(),
             ),
-            CommanderListDataType::Enum(inner) => inner.encode_to_serializer(
+            TooltrainListDataType::Enum(inner) => inner.encode_to_serializer(
                 serializer,
                 value.into_iter().map(|v| v.try_into().unwrap()).collect(),
             ),
-            CommanderListDataType::Struct(inner) => inner.encode_to_serializer(
+            TooltrainListDataType::Struct(inner) => inner.encode_to_serializer(
                 serializer,
                 value.into_iter().map(|v| v.try_into().unwrap()).collect(),
             ),
-            CommanderListDataType::Generic(inner) => inner.encode_to_serializer(serializer, value),
+            TooltrainListDataType::Generic(inner) => inner.encode_to_serializer(serializer, value),
         }
     }
 
     fn decode_from_reader(&self, reader: Reader<&[u8]>) -> Result<Self::Value, Error> {
         match self {
-            CommanderListDataType::Boolean(inner) => Ok(inner
+            TooltrainListDataType::Boolean(inner) => Ok(inner
                 .decode_from_reader(reader)?
                 .into_iter()
                 .map(|v| v.into())
                 .collect()),
-            CommanderListDataType::Number(inner) => Ok(inner
+            TooltrainListDataType::Number(inner) => Ok(inner
                 .decode_from_reader(reader)?
                 .into_iter()
                 .map(|v| v.into())
                 .collect()),
-            CommanderListDataType::String(inner) => Ok(inner
+            TooltrainListDataType::String(inner) => Ok(inner
                 .decode_from_reader(reader)?
                 .into_iter()
                 .map(|v| v.into())
                 .collect()),
-            CommanderListDataType::Bytes(inner) => Ok(inner
+            TooltrainListDataType::Bytes(inner) => Ok(inner
                 .decode_from_reader(reader)?
                 .into_iter()
                 .map(|v| v.into())
                 .collect()),
-            CommanderListDataType::Color(inner) => Ok(inner
+            TooltrainListDataType::Color(inner) => Ok(inner
                 .decode_from_reader(reader)?
                 .into_iter()
                 .map(|v| v.into())
                 .collect()),
-            CommanderListDataType::Json(inner) => Ok(inner
+            TooltrainListDataType::Json(inner) => Ok(inner
                 .decode_from_reader(reader)?
                 .into_iter()
                 .map(|v| v.into())
                 .collect()),
-            CommanderListDataType::Svg(inner) => Ok(inner
+            TooltrainListDataType::Svg(inner) => Ok(inner
                 .decode_from_reader(reader)?
                 .into_iter()
                 .map(|v| v.into())
                 .collect()),
-            CommanderListDataType::Path(inner) => Ok(inner
+            TooltrainListDataType::Path(inner) => Ok(inner
                 .decode_from_reader(reader)?
                 .into_iter()
                 .map(|v| v.into())
                 .collect()),
-            CommanderListDataType::Enum(inner) => Ok(inner
+            TooltrainListDataType::Enum(inner) => Ok(inner
                 .decode_from_reader(reader)?
                 .into_iter()
                 .map(|v| v.into())
                 .collect()),
-            CommanderListDataType::Struct(inner) => Ok(inner
+            TooltrainListDataType::Struct(inner) => Ok(inner
                 .decode_from_reader(reader)?
                 .into_iter()
                 .map(|v| v.into())
                 .collect()),
-            CommanderListDataType::Generic(inner) => inner.decode_from_reader(reader),
+            TooltrainListDataType::Generic(inner) => inner.decode_from_reader(reader),
         }
     }
 }

@@ -1,4 +1,4 @@
-use tooltrain_data::{CommanderCoder, CommanderPathDataType};
+use tooltrain_data::{TooltrainCoder, TooltrainPathDataType};
 use tooltrain_rust_guest::tooltrain::base::inputs::ArgumentSpec;
 use tooltrain_rust_guest::tooltrain::base::streaming_outputs::ListOutputRequest;
 use tooltrain_rust_guest::wasi::{
@@ -22,7 +22,7 @@ impl Guest for MastodonFeedProgram {
             arguments: vec![ArgumentSpec {
                 name: "instance".to_string(),
                 description: "The Mastodon instance to fetch the public feed from".to_string(),
-                data_type: CommanderPathDataType {}.type_string(),
+                data_type: TooltrainPathDataType {}.type_string(),
                 supports_updates: false,
             }],
             performs_state_change: false,

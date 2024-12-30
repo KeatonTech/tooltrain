@@ -9,7 +9,7 @@ use anyhow::{anyhow, Error};
 use derive_more::{IsVariant, TryInto, Unwrap};
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
 use tokio::sync::broadcast::{channel, Receiver, Sender};
-use tooltrain_data::CommanderDataType;
+use tooltrain_data::TooltrainDataType;
 use wasmtime_wasi_http::{WasiHttpCtx, WasiHttpView};
 
 use wasmtime::component::*;
@@ -38,7 +38,7 @@ pub struct DataStreamMetadata {
     pub id: ResourceId,
     pub name: String,
     pub description: String,
-    pub data_type: CommanderDataType,
+    pub data_type: TooltrainDataType,
     pub data_stream_type: DataStreamType,
 }
 
@@ -72,7 +72,7 @@ impl DataStreamStorage {
         &self,
         name: String,
         description: String,
-        data_type: CommanderDataType,
+        data_type: TooltrainDataType,
         stream: Arc<RwLock<DataStream>>,
     ) -> Result<ResourceId, Error> {
         let mut writer = self.0.write();

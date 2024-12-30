@@ -1,7 +1,7 @@
 use std::{path::PathBuf, str::FromStr};
 
 use anyhow::{anyhow, Error};
-use tooltrain_data::CommanderPathDataType;
+use tooltrain_data::TooltrainPathDataType;
 use tooltrain_engine::{
     streaming::{OutputChange, OutputHandle, Outputs, TreeOutputHandle},
     CommanderEngine, CommanderStreamingProgramRun, ProgramSource,
@@ -21,7 +21,7 @@ async fn main() -> Result<(), Error> {
         .run()
         .await?
         .build_arguments(|builder, schema| {
-            builder.set_value_argument::<CommanderPathDataType>(
+            builder.set_value_argument::<TooltrainPathDataType>(
                 schema.arguments.first().unwrap(),
                 PathBuf::from_str("Users").unwrap(),
             )

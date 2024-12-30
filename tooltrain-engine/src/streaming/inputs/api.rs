@@ -3,8 +3,8 @@ use std::{collections::BTreeMap, marker::PhantomData, sync::Arc};
 use parking_lot::RwLock;
 use tokio_stream::{once, wrappers::BroadcastStream, Stream, StreamExt};
 use tooltrain_data::{
-    CommanderCoder, CommanderDataType, CommanderListDataType, CommanderTypedListDataType,
-    CommanderValue,
+    TooltrainCoder, TooltrainDataType, TooltrainListDataType, TooltrainTypedListDataType,
+    TooltrainValue,
 };
 use wasmtime::component::Resource;
 
@@ -19,12 +19,12 @@ use crate::{
 use anyhow::Error;
 
 #[derive(Clone, Debug)]
-pub struct ValueInputHandle<ValueType: CommanderCoder> {
+pub struct ValueInputHandle<ValueType: TooltrainCoder> {
     pub metadata: DataStreamMetadata,
     value_type: std::marker::PhantomData<ValueType>,
 }
 
-impl<ValueType: CommanderCoder> ValueInputHandle<ValueType> {
+impl<ValueType: TooltrainCoder> ValueInputHandle<ValueType> {
     pub(crate) fn as_input_binding(&self) -> bindings::streaming_inputs::Input {
         let value_resource: Resource<bindings::streaming_inputs::ValueInput> =
             Resource::new_own(self.metadata.id);
@@ -39,7 +39,7 @@ impl<ValueType: CommanderCoder> ValueInputHandle<ValueType> {
         }
     }
 
-    pub fn downcast<T: CommanderCoder>(&self) -> ValueInputHandle<T>
+    pub fn downcast<T: TooltrainCoder>(&self) -> ValueInputHandle<T>
     where
         T: Into<ValueType>,
     {
@@ -51,15 +51,15 @@ impl<ValueType: CommanderCoder> ValueInputHandle<ValueType> {
 }
 
 #[derive(Debug)]
-pub struct ValueInputRef<'a, ValueType: CommanderCoder> {
+pub struct ValueInputRef<'a, ValueType: TooltrainCoder> {
     storage: &'a DataStreamStorage,
     id: ResourceId,
     _phantom: PhantomData<ValueType>,
 }
 
-impl<ValueType: CommanderCoder> ValueInputRef<'_, ValueType>
+impl<ValueType: TooltrainCoder> ValueInputRef<'_, ValueType>
 where
-    ValueType::Value: Into<CommanderValue>,
+    ValueType::Value: Into<TooltrainValue>,
 {
     pub fn set(&self, value: ValueType::Value) -> Result<(), Error> {
         self.storage
@@ -77,12 +77,12 @@ where
 }
 
 #[derive(Clone, Debug)]
-pub struct ListInputHandle<ValueType: CommanderCoder> {
+pub struct ListInputHandle<ValueType: TooltrainCoder> {
     pub metadata: DataStreamMetadata,
     value_type: std::marker::PhantomData<ValueType>,
 }
 
-impl<ValueType: CommanderCoder> ListInputHandle<ValueType> {
+impl<ValueType: TooltrainCoder> ListInputHandle<ValueType> {
     pub(crate) fn as_input_binding(&self) -> bindings::streaming_inputs::Input {
         let value_resource: Resource<bindings::streaming_inputs::ListInput> =
             Resource::new_own(self.metadata.id);
@@ -97,7 +97,7 @@ impl<ValueType: CommanderCoder> ListInputHandle<ValueType> {
         }
     }
 
-    pub fn downcast<T: CommanderCoder>(&self) -> ListInputHandle<T>
+    pub fn downcast<T: TooltrainCoder>(&self) -> ListInputHandle<T>
     where
         T: Into<ValueType>,
     {
@@ -109,15 +109,15 @@ impl<ValueType: CommanderCoder> ListInputHandle<ValueType> {
 }
 
 #[derive(Debug)]
-pub struct ListInputRef<'a, ValueType: CommanderCoder> {
+pub struct ListInputRef<'a, ValueType: TooltrainCoder> {
     storage: &'a DataStreamStorage,
     id: ResourceId,
     _phantom: PhantomData<ValueType>,
 }
 
-impl<ValueType: CommanderCoder> ListInputRef<'_, ValueType>
+impl<ValueType: TooltrainCoder> ListInputRef<'_, ValueType>
 where
-    ValueType::Value: Into<CommanderValue>,
+    ValueType::Value: Into<TooltrainValue>,
 {
     pub fn add(&self, value: ValueType::Value) -> Result<(), Error> {
         self.storage
@@ -136,18 +136,18 @@ where
 
 #[derive(Clone, Debug)]
 pub enum InputHandle {
-    Value(ValueInputHandle<CommanderDataType>),
-    List(ListInputHandle<CommanderDataType>),
+    Value(ValueInputHandle<TooltrainDataType>),
+    List(ListInputHandle<TooltrainDataType>),
 }
 
 impl InputHandle {
     fn from_metadata(metadata: DataStreamMetadata) -> Self {
         match metadata.data_stream_type {
-            DataStreamType::Value => InputHandle::Value(ValueInputHandle::<CommanderDataType> {
+            DataStreamType::Value => InputHandle::Value(ValueInputHandle::<TooltrainDataType> {
                 metadata,
                 value_type: PhantomData,
             }),
-            DataStreamType::List => InputHandle::List(ListInputHandle::<CommanderDataType> {
+            DataStreamType::List => InputHandle::List(ListInputHandle::<TooltrainDataType> {
                 metadata,
                 value_type: PhantomData,
             }),
@@ -225,9 +225,9 @@ impl Inputs<'_> {
         initial_value: Option<ValueType::Value>,
     ) -> Result<ValueInputHandle<ValueType>, Error>
     where
-        ValueType: CommanderCoder,
-        ValueType: Into<CommanderDataType>,
-        ValueType::Value: Into<CommanderValue>,
+        ValueType: TooltrainCoder,
+        ValueType: Into<TooltrainDataType>,
+        ValueType::Value: Into<TooltrainValue>,
     {
         let resource_id = self.0.add(
             name,
@@ -243,19 +243,19 @@ impl Inputs<'_> {
         })
     }
 
-    pub fn new_list_input<V: CommanderCoder + 'static>(
+    pub fn new_list_input<V: TooltrainCoder + 'static>(
         &self,
         name: String,
         description: String,
-        data_type: CommanderTypedListDataType<V>,
+        data_type: TooltrainTypedListDataType<V>,
     ) -> Result<ListInputHandle<V>, Error>
     where
-        CommanderTypedListDataType<V>: Into<CommanderListDataType>,
+        TooltrainTypedListDataType<V>: Into<TooltrainListDataType>,
     {
         let resource_id = self.0.add(
             name,
             description,
-            CommanderDataType::List(data_type.into()),
+            TooltrainDataType::List(data_type.into()),
             Arc::new(RwLock::new(DataStream::List(ListStream::new()))),
         )?;
         Ok(ListInputHandle {
@@ -268,12 +268,12 @@ impl Inputs<'_> {
         &self,
         name: String,
         description: String,
-        data_type: CommanderListDataType,
-    ) -> Result<ListInputHandle<CommanderDataType>, Error> {
+        data_type: TooltrainListDataType,
+    ) -> Result<ListInputHandle<TooltrainDataType>, Error> {
         let resource_id = self.0.add(
             name,
             description,
-            CommanderDataType::List(data_type),
+            TooltrainDataType::List(data_type),
             Arc::new(RwLock::new(DataStream::List(ListStream::new()))),
         )?;
         Ok(ListInputHandle {
@@ -290,9 +290,9 @@ impl Inputs<'_> {
         from: O,
     ) -> Result<InputHandle, Error>
     where
-        ValueType: CommanderCoder,
-        ValueType: Into<CommanderDataType>,
-        ValueType::Value: Into<CommanderValue>,
+        ValueType: TooltrainCoder,
+        ValueType: Into<TooltrainDataType>,
+        ValueType::Value: Into<TooltrainValue>,
     {
         let resource_id = self.0.add(
             name,

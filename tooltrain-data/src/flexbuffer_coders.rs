@@ -2,7 +2,7 @@ use anyhow::Error;
 use flexbuffers::{FlexbufferSerializer, Reader};
 use serde::{Deserialize, Serialize};
 
-pub trait CommanderCoder {
+pub trait TooltrainCoder {
     type Value;
 
     fn type_string(&self) -> String;
@@ -27,7 +27,7 @@ pub trait CommanderCoder {
     }
 }
 
-pub trait CommanderWireFormatCoder {
+pub trait TooltrainWireFormatCoder {
     type Value;
     type WireFormat: Serialize + for<'a> Deserialize<'a>;
 
@@ -38,9 +38,9 @@ pub trait CommanderWireFormatCoder {
     fn decode_from_wire_format(&self, wire_format: Self::WireFormat) -> Result<Self::Value, Error>;
 }
 
-impl<D> CommanderCoder for D
+impl<D> TooltrainCoder for D
 where
-    D: CommanderWireFormatCoder,
+    D: TooltrainWireFormatCoder,
     D: Send + Sync,
 {
     type Value = D::Value;
@@ -63,14 +63,14 @@ where
     }
 }
 
-pub trait CommanderPrimitiveCoder {
+pub trait TooltrainPrimitiveCoder {
     type Value;
     fn type_string__(&self) -> &'static str;
 }
 
-impl<P> CommanderWireFormatCoder for P
+impl<P> TooltrainWireFormatCoder for P
 where
-    P: CommanderPrimitiveCoder,
+    P: TooltrainPrimitiveCoder,
     P::Value: Serialize,
     P::Value: for<'de> Deserialize<'de>,
 {

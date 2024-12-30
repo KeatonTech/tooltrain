@@ -13,7 +13,7 @@ use anyhow::Error;
 use async_trait::async_trait;
 
 use parking_lot::RwLock;
-use tooltrain_data::{parse, CommanderCoder};
+use tooltrain_data::{parse, TooltrainCoder};
 use wasmtime::component::*;
 use wasmtime_wasi::WasiImpl;
 

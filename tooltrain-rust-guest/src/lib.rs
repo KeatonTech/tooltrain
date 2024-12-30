@@ -4,7 +4,7 @@ use tooltrain::base::streaming_inputs::{ListChangeStream, TreeChangeStream, Valu
 use tooltrain::base::streaming_outputs::{
     ListOutputRequest, ListOutputRequestStream, TreeOutputRequest, TreeOutputRequestStream,
 };
-use tooltrain_data::CommanderCoder;
+use tooltrain_data::TooltrainCoder;
 
 wit_bindgen::generate!({
     path: "../wit",
@@ -54,7 +54,7 @@ impl Stream for ValueChangeStream {
 }
 
 impl ValueInput {
-    pub fn values<DT: CommanderCoder + 'static>(
+    pub fn values<DT: TooltrainCoder + 'static>(
         &self,
         data_type: DT,
     ) -> impl Stream<Item = Option<DT::Value>> + '_ {

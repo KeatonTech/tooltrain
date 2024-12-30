@@ -9,7 +9,7 @@ use anyhow::{anyhow, Error};
 use parking_lot::RwLock;
 use tokio::{runtime, task::JoinHandle};
 use tokio_stream::StreamExt;
-use tooltrain_data::{CommanderCoder, CommanderPathDataType};
+use tooltrain_data::{TooltrainCoder, TooltrainPathDataType};
 use tooltrain_rust_guest::{
     add_tree_output, export_guest,
     tooltrain::base::{
@@ -30,7 +30,7 @@ impl Guest for FileExplorerProgram {
             arguments: vec![ArgumentSpec {
                 name: "root".to_string(),
                 description: "The root directory for the file tree".to_string(),
-                data_type: CommanderPathDataType {}.type_string(),
+                data_type: TooltrainPathDataType {}.type_string(),
                 supports_updates: true,
             }],
             performs_state_change: false,
@@ -59,7 +59,7 @@ async fn run_internal(inputs: Vec<Input>) -> Result<String, Error> {
     )));
 
     let mut running_job: Option<JoinHandle<()>> = None;
-    let mut stream = path_input.values(CommanderPathDataType {});
+    let mut stream = path_input.values(TooltrainPathDataType {});
     while let Some(Some(path_value)) = stream.next().await {
         if let Some(job) = running_job {
             job.abort();
@@ -128,7 +128,7 @@ impl FileExplorer {
                     .to_string_lossy()
                     .to_string(),
                 has_children: entry.file_type().map(|t| t.is_dir()).unwrap_or(false),
-                value: CommanderPathDataType {}
+                value: TooltrainPathDataType {}
                     .encode(
                         full_pathbuf
                             .clone()

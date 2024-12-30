@@ -7,7 +7,7 @@ mod value;
 
 use anyhow::{anyhow, Error};
 pub use list::{ListChange, ListStream};
-use tooltrain_data::CommanderValue;
+use tooltrain_data::TooltrainValue;
 pub use tree::{TreeChange, TreeStream, TreeStreamNode};
 pub use value::{ValueChange, ValueStream};
 
@@ -20,9 +20,9 @@ pub enum DataStream {
 
 #[derive(Clone, Debug, TryInto, IsVariant, Unwrap)]
 pub enum DataStreamSnapshot {
-    List(Vec<Arc<CommanderValue>>),
+    List(Vec<Arc<TooltrainValue>>),
     Tree(Vec<TreeStreamNode>),
-    Value(Option<Arc<CommanderValue>>),
+    Value(Option<Arc<TooltrainValue>>),
 }
 
 impl DataStream {

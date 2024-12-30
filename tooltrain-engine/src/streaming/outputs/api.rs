@@ -12,7 +12,7 @@ use anyhow::Error;
 use parking_lot::RwLock;
 use tokio::sync::broadcast::Receiver;
 use tokio_stream::{once, wrappers::BroadcastStream, Stream, StreamExt};
-use tooltrain_data::CommanderValue;
+use tooltrain_data::TooltrainValue;
 
 fn make_broadcast_stream<T: Clone + Send + 'static>(
     broadcast_receiver: Receiver<T>,
@@ -49,7 +49,7 @@ impl ValueOutputRef<'_> {
         self.storage.get(self.id).unwrap().metadata.clone()
     }
 
-    pub fn value(&self) -> Result<Option<Arc<CommanderValue>>, Error> {
+    pub fn value(&self) -> Result<Option<Arc<TooltrainValue>>, Error> {
         Ok(self
             .storage
             .get(self.id)?
@@ -72,7 +72,7 @@ impl ValueOutputRef<'_> {
 
     pub fn value_stream(
         &self,
-    ) -> Result<impl Stream<Item = Option<Arc<CommanderValue>>> + '_, Error> {
+    ) -> Result<impl Stream<Item = Option<Arc<TooltrainValue>>> + '_, Error> {
         Ok(once(self.value()?).chain(self.updates_stream()?.map_while(|_| self.value().ok())))
     }
 }
@@ -108,7 +108,7 @@ impl ListOutputRef<'_> {
         self.storage.get(self.id).unwrap().metadata.clone()
     }
 
-    pub fn value(&self) -> Result<Vec<Arc<CommanderValue>>, Error> {
+    pub fn value(&self) -> Result<Vec<Arc<TooltrainValue>>, Error> {
         Ok(self
             .storage
             .get(self.id)?
@@ -131,7 +131,7 @@ impl ListOutputRef<'_> {
 
     pub fn values_stream(
         &self,
-    ) -> Result<impl Stream<Item = Vec<Arc<CommanderValue>>> + '_, Error> {
+    ) -> Result<impl Stream<Item = Vec<Arc<TooltrainValue>>> + '_, Error> {
         Ok(once(self.value()?).chain(self.updates_stream()?.map_while(|_| self.value().ok())))
     }
 

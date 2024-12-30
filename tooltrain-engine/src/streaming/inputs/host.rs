@@ -2,7 +2,7 @@ use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
-use tooltrain_data::{CommanderCoder, CommanderDataType, CommanderValue};
+use tooltrain_data::{TooltrainCoder, TooltrainDataType, TooltrainValue};
 use wasmtime::component::Resource;
 use wasmtime_wasi::WasiImpl;
 
@@ -91,13 +91,13 @@ impl HostListInput for WasiImpl<&mut WasmStorage> {
     async fn get(&mut self, resource: Resource<ListInput>) -> Result<Vec<u8>, Error> {
         let data_stream_resource = self.0.inputs.get(resource.rep())?;
         let data_type = &data_stream_resource.metadata.data_type;
-        let CommanderDataType::List(list_data_type) = data_type else {
+        let TooltrainDataType::List(list_data_type) = data_type else {
             return Err(anyhow!(
                 "Expected a list<> data type, got {}",
                 data_type.type_string()
             ));
         };
-        let value_list: Vec<CommanderValue> = data_stream_resource
+        let value_list: Vec<TooltrainValue> = data_stream_resource
             .stream
             .read()
             .try_get_list()?

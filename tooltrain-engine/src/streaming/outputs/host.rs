@@ -15,7 +15,7 @@ use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 
 use tokio_stream::{wrappers::BroadcastStream, StreamExt};
-use tooltrain_data::CommanderCoder;
+use tooltrain_data::TooltrainCoder;
 use wasmtime::component::*;
 use wasmtime_wasi::WasiImpl;
 

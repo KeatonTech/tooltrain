@@ -3,7 +3,7 @@ use std::pin::Pin;
 use anyhow::{anyhow, Error};
 use futures::FutureExt;
 use tokio_stream::{Stream, StreamExt};
-use tooltrain_data::{CommanderCoder, CommanderDataType};
+use tooltrain_data::{TooltrainCoder, TooltrainDataType};
 
 use crate::{
     bindings::streaming_inputs::{ListChange, TreeChange},
@@ -14,7 +14,7 @@ use crate::{
 pub(super) trait ReplacementChangeFromDataStreamSnapshot: Sized {
     fn replace_from_snapshot(
         snapshot: &DataStreamSnapshot,
-        data_type: &CommanderDataType,
+        data_type: &TooltrainDataType,
     ) -> Result<Self, Error>;
 }
 
@@ -60,7 +60,7 @@ impl<T: Clone + ReplacementChangeFromDataStreamSnapshot> InputChangeStream<T> {
 impl ReplacementChangeFromDataStreamSnapshot for Option<Vec<u8>> {
     fn replace_from_snapshot(
         snapshot: &DataStreamSnapshot,
-        data_type: &CommanderDataType,
+        data_type: &TooltrainDataType,
     ) -> Result<Self, Error> {
         match snapshot {
             DataStreamSnapshot::Value(maybe_value) => maybe_value
@@ -77,7 +77,7 @@ impl ReplacementChangeFromDataStreamSnapshot for Option<Vec<u8>> {
 impl ReplacementChangeFromDataStreamSnapshot for ListChange {
     fn replace_from_snapshot(
         snapshot: &DataStreamSnapshot,
-        data_type: &CommanderDataType,
+        data_type: &TooltrainDataType,
     ) -> Result<Self, Error> {
         match snapshot {
             DataStreamSnapshot::List(l) => Ok(ListChange::Replace(
@@ -93,7 +93,7 @@ impl ReplacementChangeFromDataStreamSnapshot for ListChange {
 impl ReplacementChangeFromDataStreamSnapshot for TreeChange {
     fn replace_from_snapshot(
         snapshot: &DataStreamSnapshot,
-        _: &CommanderDataType,
+        _: &TooltrainDataType,
     ) -> Result<Self, Error> {
         match snapshot {
             DataStreamSnapshot::Tree(t) => Ok(TreeChange::Replace(
