@@ -10,4 +10,4 @@ petgraph = { version = "0.6.5", features = ["serde-1", "stable_graph"] }
 serde = { version = "1.0.208", features = ["derive"] }
 tokio = { version = "1.39.3", features = ["sync"] }
 tokio-stream = { version = "0.1.17", features = ["sync"] }
-type_reg = { version = "0.7.0", features = ["untagged", "debug"] }
+type_reg = { version = "0.7.1", features = ["untagged", "debug"] }

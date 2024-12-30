@@ -2317,9 +2317,9 @@ dependencies = [
 
 [[package]]
 name = "type_reg"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84c7b37c4470418377170b0129d19e76ac6ed6b83d856177dcdd9edc3af84414"
+checksum = "2955e99f2b4b2403548d61897d9c09d49ac978f6dd3e290fbf47451726c9e65e"
 dependencies = [
  "downcast-rs",
  "dyn-clone",
