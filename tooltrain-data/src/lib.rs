@@ -2,9 +2,11 @@ use anyhow::{anyhow, Error};
 use pest::{iterators::Pairs, Parser};
 use pest_derive::Parser;
 
+mod conversion;
 mod flexbuffer_coders;
 pub mod types;
 
+pub use conversion::*;
 pub use flexbuffer_coders::TooltrainCoder;
 pub use types::*;
 

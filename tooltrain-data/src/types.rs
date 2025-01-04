@@ -65,10 +65,22 @@ impl TooltrainPrimitiveCoder for TooltrainColorDataType {
     }
 }
 
-#[derive(Clone, Debug, Deref, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, Default, Deref, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct JsonString(String);
 
-#[derive(Clone, Copy, Default, Debug)]
+impl From<String> for JsonString {
+    fn from(s: String) -> Self {
+        JsonString(s)
+    }
+}
+
+impl From<JsonString> for String {
+    fn from(j: JsonString) -> Self {
+        j.to_string()
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
 pub struct TooltrainJsonDataType {}
 
 impl TooltrainPrimitiveCoder for TooltrainJsonDataType {
@@ -80,6 +92,18 @@ impl TooltrainPrimitiveCoder for TooltrainJsonDataType {
 
 #[derive(Clone, Debug, Deref, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SvgString(String);
+
+impl From<String> for SvgString {
+    fn from(s: String) -> Self {
+        SvgString(s)
+    }
+}
+
+impl From<SvgString> for String {
+    fn from(j: SvgString) -> Self {
+        j.to_string()
+    }
+}
 
 #[derive(Clone, Copy, Default, Debug)]
 pub struct TooltrainSvgDataType {}
@@ -126,7 +150,7 @@ impl TooltrainEnumVariant {
     }
 }
 
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Debug)]
 pub struct TooltrainEnumDataType {
     name: String,
     variants: Vec<TooltrainEnumVariant>,

@@ -2,6 +2,8 @@ use anyhow::Error;
 use flexbuffers::{FlexbufferSerializer, Reader};
 use serde::{Deserialize, Serialize};
 
+use crate::ConvertTooltrainValue;
+
 pub trait TooltrainCoder {
     type Value;
 
@@ -64,7 +66,7 @@ where
 }
 
 pub trait TooltrainPrimitiveCoder {
-    type Value;
+    type Value: ConvertTooltrainValue;
     fn type_string__(&self) -> &'static str;
 }
 
